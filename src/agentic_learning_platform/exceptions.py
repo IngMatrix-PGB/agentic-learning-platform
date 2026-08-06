@@ -1,10 +1,15 @@
 """Application-wide exception handling.
 
-A single, flat ``AppError`` is enough at this stage: there is no
-domain/application/infrastructure split yet (see docs/architecture.md), so a
-layered exception hierarchy would be speculative. It is introduced once real
-business logic exists to justify separating domain errors from
-infrastructure errors.
+A single, flat ``AppError`` hierarchy is enough at this stage: PR-002
+introduces real domain/application/infrastructure layers (see
+docs/architecture.md), but each layer's own concrete exceptions are simple
+subclasses of the same base rather than three parallel hierarchies — there
+isn't yet enough distinct failure-handling behavior per layer to justify
+that. Revisit if that changes.
+
+Startup-time failures (dimension mismatch, migration conflicts) are
+deliberately NOT part of this hierarchy: they should crash the process before
+it starts serving traffic, not be caught and turned into an HTTP response.
 """
 
 import logging
@@ -24,6 +29,19 @@ class AppError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.message = message
+
+
+class UnsupportedDocumentError(AppError):
+    """The uploaded file is not a PDF, or is a PDF with no extractable digital
+    text (e.g. scanned-only pages) — OCR is explicitly out of scope."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
+class DocumentTooLargeError(AppError):
+    """The uploaded file exceeds ``settings.max_upload_size_mb``."""
+
+    status_code = status.HTTP_413_CONTENT_TOO_LARGE
 
 
 async def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:

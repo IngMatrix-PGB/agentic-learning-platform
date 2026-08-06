@@ -19,6 +19,18 @@ RUN uv sync --frozen --no-dev --no-editable
 
 FROM python:3.12-slim AS runtime
 
+# libgl1/libglib2.0-0 etc. are required at import time by opencv-python, a
+# transitive dependency of docling's layout/table models — without them the
+# process crashes on startup inside the slim base image.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+        libgl1 \
+        libglib2.0-0 \
+        libsm6 \
+        libxext6 \
+        libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system app \
     && useradd --system --gid app --home-dir /app --no-create-home appuser
 
@@ -26,6 +38,13 @@ WORKDIR /app
 
 COPY --from=builder --chown=appuser:app /app/.venv ./.venv
 COPY --from=builder --chown=appuser:app /app/src ./src
+
+# Cache directory for FastEmbed/Hugging Face model weights. Deliberately NOT
+# populated during build — the model is downloaded lazily on first use and
+# persisted in the `fastembed_cache` named volume mounted here in
+# docker-compose.yml, so subsequent `docker compose up` runs reuse it instead
+# of re-downloading.
+RUN mkdir -p /app/.cache/fastembed && chown -R appuser:app /app/.cache
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
