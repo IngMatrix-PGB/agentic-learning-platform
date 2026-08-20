@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Curso de demostración — Agentic Learning Platform</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+        color: #111827;
+        line-height: 1.6;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      .lesson {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 16px;
+      }
+      .ask-tutor {
+        margin-top: 24px;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      .hint {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Curso de demostración: Gestión de Incidentes y Problemas</h1>
+
+    <div class="lesson">
+      <p>
+        Esta página simula el contenido de un curso de e-learning. El PDF de
+        demo (<code>scripts/demo_local.sh</code>) trata sobre gestión de
+        incidentes (página 1) y gestión de problemas (página 2) — sube ese
+        PDF primero con <code>./scripts/demo_local.sh</code> o
+        <code>POST /v1/documents</code>, y luego pregúntale al tutor sobre
+        ese contenido.
+      </p>
+      <p>
+        Esta página no es un LMS: existe únicamente para mostrar cómo el
+        widget se integraría en el portal real de un curso.
+      </p>
+    </div>
+
+    <button class="ask-tutor" type="button" id="ask-tutor-btn">
+      Pregúntale al Tutor
+    </button>
+    <p class="hint">
+      Prueba una pregunta del contenido del curso (ej. "¿Qué es la gestión de
+      incidentes?") y luego una fuera de alcance (ej. "¿Cómo se prepara una
+      paella valenciana?") para ver el mensaje de evidencia insuficiente.
+    </p>
+
+    <script src="/widget/widget.js"></script>
+    <learning-assistant-widget
+      id="tutor-widget"
+      api-base=""
+    ></learning-assistant-widget>
+
+    <script>
+      document.getElementById("ask-tutor-btn").addEventListener("click", () => {
+        document.getElementById("tutor-widget").open();
+      });
+    </script>
+  </body>
+</html>

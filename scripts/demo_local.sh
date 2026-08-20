@@ -57,4 +57,10 @@ curl --fail -s -X POST "${API_URL}/v1/query" \
 echo
 
 echo
+echo "== Demo visual (widget) =="
+echo "PDF cargado. Abre ${API_URL}/demo en un navegador, haz clic en"
+echo "'Pregúntale al Tutor' y prueba las mismas dos preguntas para ver la"
+echo "respuesta progresiva (streaming) y la cita del documento."
+
+echo
 echo "Demo completa."

@@ -69,12 +69,35 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     retrieval_score_threshold: float = 0.35
 
+    # --- Query input limits ---
+    # Shared by /v1/query and /v1/query/stream (see routes.query.QueryRequest)
+    # — one contract, not two independently-drifting limits.
+    max_question_length: int = 2000
+
+    # --- Streaming (PR-003) ---
+    # Local mode has no real token-by-token generation (ExtractiveAnswerGeneratorAdapter
+    # returns the full answer at once, and BedrockAnswerGeneratorAdapter uses `ainvoke`,
+    # not `astream`, in this PR — see docs/architecture.md). This delay paces the
+    # already-complete answer word-by-word over SSE purely to demonstrate the
+    # streaming protocol/UX, not real model streaming.
+    stream_chunk_delay_ms: int = 40
+
+    # --- CORS ---
+    # Comma-separated, explicit origins — never "*". A plain str (not list[str])
+    # keeps this consistent with pydantic-settings' env parsing for the rest of
+    # this file (no JSON-in-env-var requirement for a single value).
+    cors_allowed_origins: str = "http://localhost:8000"
+
     @property
     def database_dsn(self) -> str:
         return (
             f"postgresql://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
+
+    @property
+    def cors_allowed_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
 
 @lru_cache

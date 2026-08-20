@@ -38,6 +38,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=appuser:app /app/.venv ./.venv
 COPY --from=builder --chown=appuser:app /app/src ./src
+COPY --chown=appuser:app web ./web
 
 # Cache directory for FastEmbed/Hugging Face model weights. Deliberately NOT
 # populated during build — the model is downloaded lazily on first use and

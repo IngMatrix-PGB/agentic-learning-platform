@@ -15,6 +15,7 @@ it starts serving traffic, not be caught and turned into an HTTP response.
 import logging
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -49,9 +50,13 @@ async def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:
 
 
 async def _handle_validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    # `jsonable_encoder`, not a raw `exc.errors()` dict: a custom
+    # `field_validator` raising `ValueError` (e.g. routes.query.QueryRequest's
+    # max-length check) makes pydantic put the raw exception object itself
+    # into each error's `ctx.error`, which plain `json.dumps` cannot serialize.
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors()},
+        content={"detail": jsonable_encoder(exc.errors())},
     )
 
 
