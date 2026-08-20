@@ -1,4 +1,4 @@
-.PHONY: install run test eval lint format typecheck check docker-build docker-up docker-down
+.PHONY: install run test eval eval-hybrid eval-compare lint format typecheck check docker-build docker-up docker-down
 
 install:
 	uv sync
@@ -11,6 +11,12 @@ test:
 
 eval:
 	uv run python -m agentic_learning_platform.evals.run_eval
+
+eval-hybrid:
+	RETRIEVAL_STRATEGY=hybrid uv run python -m agentic_learning_platform.evals.run_eval
+
+eval-compare:
+	uv run python -m agentic_learning_platform.evals.compare_reports
 
 lint:
 	uv run ruff check .
