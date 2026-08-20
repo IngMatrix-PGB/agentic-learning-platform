@@ -4,7 +4,10 @@ Backend for an AI Learning Assistant. **PR-002 — Local RAG flow**: upload a
 PDF, ask a question, get an answer with a verifiable page citation, running
 on PostgreSQL + pgvector. **PR-003 — Embeddable chat widget + streaming**:
 a small embeddable widget and a demo course page consume the RAG flow
-progressively over Server-Sent Events. See
+progressively over Server-Sent Events. **PR-004 — Context isolation**:
+organization/course-scoped retrieval and a dev-only authorization context.
+**PR-005 — RAG evals baseline**: a reproducible quality baseline for the
+current (vector-only) retrieval — see "Evaluation harness" below. See
 [`docs/architecture.md`](docs/architecture.md) for the reasoning behind what
 is (and is not) here.
 
@@ -200,16 +203,35 @@ section), separate from whatever `./scripts/demo_local.sh`/`/demo/` puts
 into the regular demo database. No manual reset is needed between running
 the demo and running the tests.
 
+## Evaluation harness
+
+```bash
+docker compose up -d postgres   # same prerequisite as `make test`
+make eval
+```
+
+Measures (never tunes) current RAG quality — Recall@1/3/5, MRR, Citation
+Accuracy, No-Evidence Accuracy, groundedness, and retrieval latency — against
+a small synthetic golden dataset (`eval_data/golden_dataset.v1.json`), in its
+own dedicated database (`{db_name}_eval`, recreated fresh on every run,
+never shared with the demo or with `pytest`). Writes
+`eval_results/baseline_vector_only.v1.json` — named after the retrieval
+strategy it measures, so a future Hybrid Retrieval run writes its own file
+instead of overwriting this baseline — and prints a human-readable summary.
+See `docs/architecture.md`'s PR-005 section for exact metric definitions and
+the current baseline.
+
 ## Project status
 
 Implemented: PDF parsing (Docling, digital text only, no OCR), page-based
 chunking, embeddings (local or Bedrock), PostgreSQL + pgvector storage and
 similarity search, question answering with citations, the "insufficient
-evidence" fallback, an embeddable chat widget, a demo course page, and
-streaming (transport-level pacing, not real model streaming — see above).
-Deliberately **not** implemented yet: LangGraph, real Bedrock token
-streaming, authentication, multi-tenancy, S3, Terraform, DOCX/PPTX/XLSX,
-diagrams, video, and Bedrock Knowledge Bases. These arrive in later,
+evidence" fallback, an embeddable chat widget, a demo course page, streaming
+(transport-level pacing, not real model streaming), organization/course
+context isolation, and a reproducible RAG quality baseline (`make eval`).
+Deliberately **not** implemented yet: LangGraph, Hybrid Retrieval/reranking,
+real Bedrock token streaming, real authentication, S3, Terraform,
+DOCX/PPTX/XLSX, diagrams, video, and Bedrock Knowledge Bases. These arrive in later,
 separately reviewed PRs.
 
 ## License

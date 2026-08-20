@@ -1,0 +1,310 @@
+[
+  {
+    "id": "A1-incident-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es la gestión de incidentes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "A-direct"
+  },
+  {
+    "id": "A2-problem-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es la gestión de problemas?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [2],
+    "category": "A-direct"
+  },
+  {
+    "id": "A3-change-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es la gestión de cambios?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [3],
+    "category": "A-direct"
+  },
+  {
+    "id": "A4-sla-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es un SLA?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [4],
+    "category": "A-direct"
+  },
+  {
+    "id": "A5-asset-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es la gestión de activos de TI?",
+    "expected_answerable": true,
+    "expected_source": "asset_management.pdf",
+    "expected_pages": [1],
+    "category": "A-direct"
+  },
+  {
+    "id": "A6-cmdb-direct",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es una CMDB?",
+    "expected_answerable": true,
+    "expected_source": "asset_management.pdf",
+    "expected_pages": [2],
+    "category": "A-direct"
+  },
+  {
+    "id": "B1-incident-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "Si los usuarios ya no pueden trabajar por una falla inesperada del sistema, ¿qué proceso se encarga de que puedan volver a operar cuanto antes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "B-paraphrase"
+  },
+  {
+    "id": "B2-problem-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué actividad busca entender por qué las mismas fallas vuelven a aparecer una y otra vez, para que dejen de suceder?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [2],
+    "category": "B-paraphrase"
+  },
+  {
+    "id": "B3-change-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué práctica evita que las actualizaciones al sistema que usan los clientes generen caídas imprevistas?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [3],
+    "category": "B-paraphrase"
+  },
+  {
+    "id": "B4-cmdb-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué sistema centraliza cómo están conectados entre sí los distintos recursos de infraestructura de TI?",
+    "expected_answerable": true,
+    "expected_source": "asset_management.pdf",
+    "expected_pages": [2],
+    "category": "B-paraphrase"
+  },
+  {
+    "id": "B5-asset-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cómo sabe una empresa qué equipos posee actualmente y en qué etapa de uso se encuentra cada uno, desde que llegaron hasta que se dan de baja?",
+    "expected_answerable": true,
+    "expected_source": "asset_management.pdf",
+    "expected_pages": [1],
+    "category": "B-paraphrase"
+  },
+  {
+    "id": "C1-sla-synonym",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué compromiso formal establece qué tan rápido debe atenderse a quien reporta una falla?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [4],
+    "category": "C-related-terms"
+  },
+  {
+    "id": "C2-support-tiers-synonym",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "Cuando la persona que atiende un caso no logra resolverlo, ¿a quién se lo transfiere para que alguien con mayor experiencia lo intente?",
+    "expected_answerable": true,
+    "expected_source": "sla_and_support.pdf",
+    "expected_pages": [1],
+    "category": "C-related-terms"
+  },
+  {
+    "id": "C3-asset-inventory-synonym",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué lista corporativa permite conocer cuántas computadoras y programas tiene contratados o comprados una organización, y su estado actual?",
+    "expected_answerable": true,
+    "expected_source": "asset_management.pdf",
+    "expected_pages": [1],
+    "category": "C-related-terms"
+  },
+  {
+    "id": "D1-incident-ambiguous",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué debo hacer si ocurre un incidente?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "D-ambiguous"
+  },
+  {
+    "id": "D2-problem-ambiguous",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cómo se maneja un problema en el servicio?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [2],
+    "category": "D-ambiguous"
+  },
+  {
+    "id": "D3-level-ambiguous",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué nivel resuelve los casos más complejos?",
+    "expected_answerable": true,
+    "expected_source": "sla_and_support.pdf",
+    "expected_pages": [1],
+    "category": "D-ambiguous"
+  },
+  {
+    "id": "E1-no-evidence-paella",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cómo se prepara una paella valenciana?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "E2-no-evidence-capital",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cuál es la capital de Francia?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "E3-no-evidence-bubblesort",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es un algoritmo de ordenamiento burbuja?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "E4-no-evidence-photosynthesis",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cómo funciona la fotosíntesis?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "E5-no-evidence-mlsupervised",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es el machine learning supervisado?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "E6-no-evidence-planets",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cuántos planetas tiene el sistema solar?",
+    "expected_answerable": false,
+    "category": "E-no-evidence"
+  },
+  {
+    "id": "F1-incident-vs-security-distractor",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué proceso busca restaurar el servicio después de una interrupción operativa, sin relación con seguridad de la información?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "F-distractor"
+  },
+  {
+    "id": "F2-security-vs-incident-distractor",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿A quién se debe reportar de inmediato un incidente de seguridad de la información sospechoso?",
+    "expected_answerable": true,
+    "expected_source": "security_policy.pdf",
+    "expected_pages": [1],
+    "category": "F-distractor"
+  },
+  {
+    "id": "F3-problem-vs-incident-distractor",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué proceso evita que los incidentes recurrentes vuelvan a ocurrir, en lugar de solo resolverlos una vez?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [2],
+    "category": "F-distractor"
+  },
+  {
+    "id": "G1-crosscourse-101-literal",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Qué es la gestión de incidentes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "G-cross-course"
+  },
+  {
+    "id": "G2-crosscourse-201-literal",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-201",
+    "question": "¿Qué es la gestión de incidentes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary_v2.pdf",
+    "expected_pages": [1],
+    "category": "G-cross-course"
+  },
+  {
+    "id": "G3-crosscourse-101-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cómo se recupera el servicio después de una interrupción?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "G-cross-course"
+  },
+  {
+    "id": "G4-crosscourse-201-paraphrase",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-201",
+    "question": "¿Cómo se recupera el servicio después de una interrupción?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary_v2.pdf",
+    "expected_pages": [1],
+    "category": "G-cross-course"
+  },
+  {
+    "id": "H1-crossorg-primary",
+    "organization_id": "eval-org-primary",
+    "course_id": "eval-course-itsm-101",
+    "question": "¿Cuál es el objetivo de la gestión de incidentes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary.pdf",
+    "expected_pages": [1],
+    "category": "H-cross-org"
+  },
+  {
+    "id": "H2-crossorg-secondary",
+    "organization_id": "eval-org-secondary",
+    "course_id": "eval-course-crossorg",
+    "question": "¿Cuál es el objetivo de la gestión de incidentes?",
+    "expected_answerable": true,
+    "expected_source": "itsm_glossary_crossorg.pdf",
+    "expected_pages": [1],
+    "category": "H-cross-org"
+  }
+]
