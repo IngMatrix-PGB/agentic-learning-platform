@@ -19,6 +19,7 @@ from agentic_learning_platform.infrastructure.db.pool import close_pool, create_
 from agentic_learning_platform.infrastructure.di import (
     build_adapters,
     build_authorization_context_provider,
+    build_lexical_search_port,
 )
 from agentic_learning_platform.logging import configure_logging
 from agentic_learning_platform.routes import (
@@ -56,11 +57,15 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
     app.state.db_pool = pool
 
     adapters = build_adapters(settings, pool)
+    lexical_search_port = build_lexical_search_port(settings, pool)
     retrieval_service = RetrievalService(
         adapters.embedding,
         adapters.vector_store,
         top_k=settings.retrieval_top_k,
         score_threshold=settings.retrieval_score_threshold,
+        lexical_search_port=lexical_search_port,
+        candidate_top_k=settings.hybrid_candidate_top_k,
+        rrf_k=settings.hybrid_rrf_k,
     )
     app.state.ingestion_service = IngestionService(
         adapters.parser,
@@ -73,8 +78,10 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
     app.state.authorization_context_provider = build_authorization_context_provider(settings)
 
     logger.info(
-        "startup_config runtime_mode=%s embedding_model=%s embedding_dimension=%d",
+        "startup_config runtime_mode=%s retrieval_strategy=%s embedding_model=%s "
+        "embedding_dimension=%d",
         settings.runtime_mode,
+        settings.retrieval_strategy,
         adapters.embedding.get_model_name(),
         adapters.embedding.get_dimension(),
     )

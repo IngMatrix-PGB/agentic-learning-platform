@@ -1,9 +1,11 @@
 """Aggregates an `EvalRun` into the final report structure: the
 `eval_results.json` payload and a human-readable terminal summary.
 
-`baseline: "vector_only"` is stamped explicitly so a future PR-006 (Hybrid
-Retrieval) run can be told apart unambiguously when comparing
-`eval_results.json` files side by side.
+`baseline` is stamped from `run.settings.retrieval_strategy` so a PR-005
+(vector_only) run and a PR-006 (hybrid) run can be told apart unambiguously
+when comparing `eval_results/*.json` files side by side — see
+`evals/compare_reports.py`. No metric formula below changed for PR-006; only
+this labeling and (when hybrid) the diagnostic latency breakdown are new.
 """
 
 import json
@@ -21,8 +23,6 @@ from agentic_learning_platform.evals.metrics import (
     recall_at_k,
 )
 from agentic_learning_platform.evals.runner import EvalRun
-
-BASELINE_LABEL = "vector_only"
 
 
 def _git_commit() -> str:
@@ -73,16 +73,20 @@ def build_report(run: EvalRun) -> dict[str, Any]:
         ),
     }
 
+    is_hybrid = run.settings.retrieval_strategy == "hybrid"
+
     return {
-        "baseline": BASELINE_LABEL,
+        "baseline": run.settings.retrieval_strategy,
         "dataset": _dataset_filename(),
         "generated_at": datetime.now(UTC).isoformat(),
         "git_commit": _git_commit(),
         "config": {
-            "retrieval_strategy": BASELINE_LABEL,
+            "retrieval_strategy": run.settings.retrieval_strategy,
             "runtime_mode": run.settings.runtime_mode,
             "retrieval_top_k": run.settings.retrieval_top_k,
             "retrieval_score_threshold": run.settings.retrieval_score_threshold,
+            "hybrid_candidate_top_k": run.settings.hybrid_candidate_top_k,
+            "hybrid_rrf_k": run.settings.hybrid_rrf_k,
             "embedding_model": run.adapters.embedding.get_model_name(),
             "embedding_dimension": run.adapters.embedding.get_dimension(),
         },
@@ -97,6 +101,24 @@ def build_report(run: EvalRun) -> dict[str, Any]:
         "num_unanswerable": len(unanswerable),
         "metrics": metrics,
         "latency_ms": latency_stats([sample.retrieval_latency_ms for sample in run.samples]),
+        # Diagnostic-only breakdown, harness-side (see evals/runner.py) —
+        # `None` for a vector_only run rather than a misleading all-zero
+        # stats block.
+        "latency_breakdown_ms": (
+            {
+                "vector": latency_stats(
+                    [s.vector_latency_ms for s in run.samples if s.vector_latency_ms is not None]
+                ),
+                "lexical": latency_stats(
+                    [s.lexical_latency_ms for s in run.samples if s.lexical_latency_ms is not None]
+                ),
+                "fusion": latency_stats(
+                    [s.fusion_latency_ms for s in run.samples if s.fusion_latency_ms is not None]
+                ),
+            }
+            if is_hybrid
+            else None
+        ),
         "per_case": [
             {
                 "id": sample.case.id,
@@ -134,7 +156,7 @@ def render_summary(report: dict[str, Any]) -> str:
         return "n/a" if value is None else f"{value:.3f}"
 
     lines = [
-        f"PR-005 RAG Eval — baseline={report['baseline']}",
+        f"RAG Eval — retrieval_strategy={report['baseline']}",
         f"dataset={report['dataset']}  commit={report['git_commit']}"
         f"  generated_at={report['generated_at']}",
         f"retrieval_strategy={config['retrieval_strategy']}  "
@@ -162,4 +184,18 @@ def render_summary(report: dict[str, Any]) -> str:
         "Retrieval latency (ms):",
         f"  mean = {latency['mean']:.2f}  p50 = {latency['p50']:.2f}  p95 = {latency['p95']:.2f}",
     ]
+
+    breakdown = report.get("latency_breakdown_ms")
+    if breakdown is not None:
+        lines += [
+            "",
+            "Retrieval latency breakdown (ms, diagnostic, harness-side only):",
+            f"  vector  = mean {breakdown['vector']['mean']:.2f}"
+            f"  p50 {breakdown['vector']['p50']:.2f}  p95 {breakdown['vector']['p95']:.2f}",
+            f"  lexical = mean {breakdown['lexical']['mean']:.2f}"
+            f"  p50 {breakdown['lexical']['p50']:.2f}  p95 {breakdown['lexical']['p95']:.2f}",
+            f"  fusion  = mean {breakdown['fusion']['mean']:.2f}"
+            f"  p50 {breakdown['fusion']['p50']:.2f}  p95 {breakdown['fusion']['p95']:.2f}",
+        ]
+
     return "\n".join(lines)
