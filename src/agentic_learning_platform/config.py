@@ -69,23 +69,6 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     retrieval_score_threshold: float = 0.35
 
-    # --- Hybrid Retrieval (PR-006) ---
-    # "vector_only": unchanged PR-002/PR-004 behavior (pure cosine
-    # similarity). "hybrid": Vector Search + PostgreSQL FTS + Reciprocal
-    # Rank Fusion. Explicit and deterministic, never auto-detected — same
-    # philosophy as `runtime_mode` (see docs/architecture.md's PR-006
-    # section).
-    retrieval_strategy: Literal["vector_only", "hybrid"] = "vector_only"
-    # Candidates pulled from EACH branch (vector, lexical) before fusion —
-    # deliberately larger than `retrieval_top_k` so RRF can promote a
-    # document that ranks outside the final top_k in one branch but highly
-    # in the other; the fused list is truncated to `retrieval_top_k`
-    # afterward. Not tuned against the golden dataset.
-    hybrid_candidate_top_k: int = 15
-    # RRF's k constant. 60 is the literature-standard default (Cormack,
-    # Clarke & Buettcher, 2009) — never tuned against the golden dataset.
-    hybrid_rrf_k: int = 60
-
     # --- Query input limits ---
     # Shared by /v1/query and /v1/query/stream (see routes.query.QueryRequest)
     # — one contract, not two independently-drifting limits.
