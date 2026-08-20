@@ -68,9 +68,18 @@
     </p>
 
     <script src="/widget/widget.js"></script>
+    <!--
+      DEV ONLY: organization-id/course-id/user-id below are a trusted local
+      development context, NOT real authentication — see docs/architecture.md's
+      PR-004 section. A real deployment derives these from the portal's own
+      login, never from attributes set by the page itself.
+    -->
     <learning-assistant-widget
       id="tutor-widget"
       api-base=""
+      organization-id="org-demo"
+      course-id="course-demo"
+      user-id="user-demo"
     ></learning-assistant-widget>
 
     <script>

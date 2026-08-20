@@ -9,6 +9,14 @@ set -euo pipefail
 API_URL="${API_URL:-http://localhost:8000}"
 DEMO_PDF="/tmp/agentic_learning_platform_demo.pdf"
 
+# DEV ONLY: trusted local development context (PR-004) — NOT real
+# authentication. See docs/architecture.md's PR-004 section.
+CONTEXT_HEADERS=(
+  -H "X-Organization-Id: org-demo"
+  -H "X-Course-Id: course-demo"
+  -H "X-User-Id: user-demo"
+)
+
 echo "== Generando PDF sintetico de demo =="
 uv run python - <<PY
 from fpdf import FPDF
@@ -39,12 +47,14 @@ echo
 echo
 echo "== Subiendo el PDF de demo =="
 curl --fail -s -X POST "${API_URL}/v1/documents" \
+  "${CONTEXT_HEADERS[@]}" \
   -F "file=@${DEMO_PDF};type=application/pdf"
 echo
 
 echo
 echo "== Pregunta con evidencia (se espera cita en pagina 1) =="
 curl --fail -s -X POST "${API_URL}/v1/query" \
+  "${CONTEXT_HEADERS[@]}" \
   -H "Content-Type: application/json" \
   -d '{"question": "¿Qué es la gestión de incidentes?"}'
 echo
@@ -52,6 +62,7 @@ echo
 echo
 echo "== Pregunta sin evidencia (se espera mensaje fijo, sin citas) =="
 curl --fail -s -X POST "${API_URL}/v1/query" \
+  "${CONTEXT_HEADERS[@]}" \
   -H "Content-Type: application/json" \
   -d '{"question": "¿Cómo se prepara una paella valenciana?"}'
 echo

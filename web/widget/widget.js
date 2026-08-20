@@ -1,8 +1,17 @@
 /**
- * <learning-assistant-widget api-base="http://localhost:8000">
+ * <learning-assistant-widget
+ *   api-base="http://localhost:8000"
+ *   organization-id="org-demo"
+ *   course-id="course-demo"
+ *   user-id="user-demo">
  *
  * Embeddable AI Learning Assistant widget. Vanilla JS Web Component, no
  * build step, no framework — see docs/architecture.md for why.
+ *
+ * organization-id/course-id/user-id are sent as X-Organization-Id/
+ * X-Course-Id/X-User-Id — a DEV-ONLY trusted local context, NOT real
+ * authentication (see docs/architecture.md's PR-004 section). A future PR
+ * derives these server-side from a real logged-in session instead.
  *
  * Public API (for a host page, e.g. web/demo/index.html):
  *   widget.open()
@@ -234,6 +243,23 @@ class LearningAssistantWidget extends HTMLElement {
     return this.getAttribute("api-base") || "";
   }
 
+  // DEV ONLY: these three identify the trusted local development context
+  // sent as X-Organization-Id/X-Course-Id/X-User-Id — NOT authentication.
+  // A future PR derives this server-side from a real logged-in session
+  // instead of trusting attributes the host page sets. See
+  // docs/architecture.md's PR-004 section.
+  get organizationId() {
+    return this.getAttribute("organization-id") || "";
+  }
+
+  get courseId() {
+    return this.getAttribute("course-id") || "";
+  }
+
+  get userId() {
+    return this.getAttribute("user-id") || "";
+  }
+
   open() {
     this.setAttribute("open", "");
   }
@@ -277,7 +303,12 @@ class LearningAssistantWidget extends HTMLElement {
   async _streamAnswer(question, assistantBubble, loadingEl) {
     const response = await fetch(`${this.apiBase}/v1/query/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Organization-Id": this.organizationId,
+        "X-Course-Id": this.courseId,
+        "X-User-Id": this.userId,
+      },
       body: JSON.stringify({ question }),
     });
 
@@ -315,6 +346,9 @@ class LearningAssistantWidget extends HTMLElement {
   }
 
   async _describeErrorResponse(response) {
+    if (response.status === 401) {
+      return "Falta configuración del widget (organization-id/course-id/user-id).";
+    }
     if (response.status === 422) {
       try {
         const body = await response.json();

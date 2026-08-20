@@ -16,7 +16,10 @@ from agentic_learning_platform.config import get_settings
 from agentic_learning_platform.exceptions import register_exception_handlers
 from agentic_learning_platform.infrastructure.db.migrations.runner import run_migrations
 from agentic_learning_platform.infrastructure.db.pool import close_pool, create_pool
-from agentic_learning_platform.infrastructure.di import build_adapters
+from agentic_learning_platform.infrastructure.di import (
+    build_adapters,
+    build_authorization_context_provider,
+)
 from agentic_learning_platform.logging import configure_logging
 from agentic_learning_platform.routes import (
     documents_router,
@@ -67,6 +70,7 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
         chunk_max_chars=settings.chunk_max_chars,
     )
     app.state.query_service = QueryService(retrieval_service, adapters.answer_generator)
+    app.state.authorization_context_provider = build_authorization_context_provider(settings)
 
     logger.info(
         "startup_config runtime_mode=%s embedding_model=%s embedding_dimension=%d",
@@ -99,7 +103,11 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_allowed_origins_list,
         allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type"],
+        # X-Organization-Id/X-Course-Id/X-User-Id: the PR-004 dev-only
+        # authorization context headers (see routes.authorization) — a
+        # cross-origin widget needs these listed here or the browser's CORS
+        # preflight rejects them before the request is ever sent.
+        allow_headers=["Content-Type", "X-Organization-Id", "X-Course-Id", "X-User-Id"],
     )
 
     register_exception_handlers(app)

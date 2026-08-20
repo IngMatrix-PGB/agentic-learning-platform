@@ -28,7 +28,8 @@ from fastapi.responses import StreamingResponse
 
 from agentic_learning_platform.application.services.query_service import QueryService
 from agentic_learning_platform.config import get_settings
-from agentic_learning_platform.domain.models import QueryAnswer
+from agentic_learning_platform.domain.models import QueryAnswer, RequestContext
+from agentic_learning_platform.routes.authorization import get_request_context
 from agentic_learning_platform.routes.query import (
     QueryRequest,
     citation_to_response,
@@ -78,9 +79,10 @@ async def _stream_answer_with_error_guard(answer: QueryAnswer) -> AsyncIterator[
 async def query_stream(
     body: QueryRequest,
     query_service: Annotated[QueryService, Depends(get_query_service)],
+    context: Annotated[RequestContext, Depends(get_request_context)],
 ) -> StreamingResponse:
     # Runs to completion here, outside the generator — see module docstring.
-    answer = await query_service.answer(body.question)
+    answer = await query_service.answer(body.question, context)
     return StreamingResponse(
         _stream_answer_with_error_guard(answer), media_type="text/event-stream"
     )

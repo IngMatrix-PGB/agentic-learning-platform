@@ -40,6 +40,27 @@ def test_preflight_for_the_streaming_endpoint_allows_the_configured_origin(
     assert "POST" in response.headers.get("access-control-allow-methods", "")
 
 
+def test_preflight_allows_the_dev_authorization_context_headers(client: TestClient) -> None:
+    """PR-004's X-Organization-Id/X-Course-Id/X-User-Id (see
+    routes.authorization) must be explicitly allowed by CORS, or a
+    cross-origin widget's preflight would be rejected by the browser before
+    the request is ever sent — this was previously only checked manually."""
+    response = client.options(
+        "/v1/query/stream",
+        headers={
+            "Origin": ALLOWED_ORIGIN,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "X-Organization-Id, X-Course-Id, X-User-Id",
+        },
+    )
+
+    allowed_headers = response.headers.get("access-control-allow-headers", "")
+    assert response.headers.get("access-control-allow-origin") == ALLOWED_ORIGIN
+    assert "x-organization-id" in allowed_headers.lower()
+    assert "x-course-id" in allowed_headers.lower()
+    assert "x-user-id" in allowed_headers.lower()
+
+
 def test_preflight_rejects_a_disallowed_origin(client: TestClient) -> None:
     response = client.options(
         "/v1/query/stream",

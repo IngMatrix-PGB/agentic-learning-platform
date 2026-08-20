@@ -13,9 +13,14 @@ from uuid import UUID
 
 @dataclass(frozen=True, slots=True)
 class SourceDocument:
-    """A single uploaded document, identified by the checksum of its bytes."""
+    """A single uploaded document, identified by the checksum of its bytes
+    (scoped to its organization/course — see docs/architecture.md's PR-004
+    section: the same bytes can exist as separate documents in different
+    courses)."""
 
     id: UUID
+    organization_id: str
+    course_id: str
     source_name: str
     checksum_sha256: str
     mime_type: str
@@ -27,10 +32,22 @@ class SourceDocument:
 
 @dataclass(frozen=True, slots=True)
 class DocumentChunk:
-    """A single chunk of extracted text, tied to the page it came from."""
+    """A single chunk of extracted text, tied to the page it came from.
+
+    ``organization_id``/``course_id`` are denormalized here from the parent
+    ``SourceDocument`` (not just present on it) so retrieval can filter
+    directly on this table before ``ORDER BY ... LIMIT`` — see
+    ``PgVectorStoreAdapter.search`` and docs/architecture.md's PR-004
+    section for why a JOIN-based filter would not work as well with
+    pgvector's ANN index. Always written from the same ``SourceDocument`` in
+    the same transaction (``insert_document``), so it can never diverge from
+    its parent document's scope.
+    """
 
     id: UUID
     document_id: UUID
+    organization_id: str
+    course_id: str
     source_name: str
     page_number: int
     chunk_index: int
@@ -75,3 +92,21 @@ class QueryAnswer:
     answer: str
     citations: list[Citation]
     has_sufficient_evidence: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RequestContext:
+    """The authorization scope of an incoming request.
+
+    IDs are treated as opaque strings, not UUID: the real values will come
+    from an external identity provider (Cognito/OIDC/an LMS) whose ID format
+    is not yet known — forcing UUID here would risk rejecting legitimate
+    external IDs before that decision is made (see docs/architecture.md's
+    PR-004 section). ``user_id`` identifies the acting user for logging/audit
+    only; it never participates in the corpus scope filter (that is
+    ``organization_id``/``course_id`` alone — see ``RetrievalService``).
+    """
+
+    organization_id: str
+    course_id: str
+    user_id: str

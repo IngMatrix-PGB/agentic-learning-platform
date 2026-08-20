@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from agentic_learning_platform.application.services.query_service import QueryService
 from agentic_learning_platform.config import get_settings
-from agentic_learning_platform.domain.models import Citation
+from agentic_learning_platform.domain.models import Citation, RequestContext
+from agentic_learning_platform.routes.authorization import get_request_context
 
 router = APIRouter(tags=["query"])
 
@@ -66,8 +67,9 @@ def get_query_service(request: Request) -> QueryService:
 async def query(
     body: QueryRequest,
     query_service: Annotated[QueryService, Depends(get_query_service)],
+    context: Annotated[RequestContext, Depends(get_request_context)],
 ) -> QueryResponse:
-    result = await query_service.answer(body.question)
+    result = await query_service.answer(body.question, context)
     return QueryResponse(
         answer=result.answer,
         citations=[citation_to_response(c) for c in result.citations],

@@ -45,6 +45,16 @@ class DocumentTooLargeError(AppError):
     status_code = status.HTTP_413_CONTENT_TOO_LARGE
 
 
+class MissingAuthorizationContextError(AppError):
+    """Required development authorization headers (``X-Organization-Id``,
+    ``X-Course-Id``, ``X-User-Id``) are missing or blank — see
+    ``infrastructure.authorization.dev_header_provider``.
+    Not raised for a real authentication failure (there is none in this PR):
+    it means the DEV-ONLY trusted context was not supplied at all."""
+
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
 async def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
