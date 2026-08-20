@@ -5,15 +5,34 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from agentic_learning_platform.application.services.query_service import QueryService
+from agentic_learning_platform.config import get_settings
+from agentic_learning_platform.domain.models import Citation
 
 router = APIRouter(tags=["query"])
 
 
 class QueryRequest(BaseModel):
-    question: str
+    """Shared request contract for both ``/v1/query`` and
+    ``/v1/query/stream`` — one consistent input validation rule for both,
+    not two independently-drifting limits (see docs/architecture.md).
+
+    The max-length check reads ``get_settings()`` inside a validator, not via
+    ``Field(max_length=...)``, so it reflects the *current* settings on every
+    request/test instead of whatever was cached at module-import time.
+    """
+
+    question: str = Field(min_length=1)
+
+    @field_validator("question")
+    @classmethod
+    def _enforce_max_length(cls, value: str) -> str:
+        max_length = get_settings().max_question_length
+        if len(value) > max_length:
+            raise ValueError(f"question exceeds max_question_length ({max_length})")
+        return value
 
 
 class CitationResponse(BaseModel):
@@ -28,6 +47,17 @@ class QueryResponse(BaseModel):
     citations: list[CitationResponse]
 
 
+def citation_to_response(citation: Citation) -> CitationResponse:
+    """The one place that maps the domain `Citation` to the HTTP contract —
+    shared by `/v1/query` and `/v1/query/stream` so the two never drift."""
+    return CitationResponse(
+        source=citation.source,
+        page=citation.page,
+        chunk_id=citation.chunk_id,
+        score=citation.score,
+    )
+
+
 def get_query_service(request: Request) -> QueryService:
     return request.app.state.query_service
 
@@ -40,8 +70,5 @@ async def query(
     result = await query_service.answer(body.question)
     return QueryResponse(
         answer=result.answer,
-        citations=[
-            CitationResponse(source=c.source, page=c.page, chunk_id=c.chunk_id, score=c.score)
-            for c in result.citations
-        ],
+        citations=[citation_to_response(c) for c in result.citations],
     )

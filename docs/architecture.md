@@ -228,7 +228,7 @@ the `fastembed_cache` named volume.
 data persistence) and `api` (depends on `postgres` being healthy, mounts the
 `fastembed_cache` named volume, overrides `DB_HOST` as described above).
 
-### Explicitly out of scope for this PR
+### Explicitly out of scope for PR-002
 
 LangGraph (the retrieve → evaluate → generate → cite flow is a small linear
 async function with one conditional branch — introducing LangGraph's
@@ -239,3 +239,152 @@ multi-tenancy, S3, Terraform, ECS, Langfuse, DeepEval, Ragas, DOCX/PPTX/XLSX,
 diagrams, OCR, video, and Bedrock Knowledge Bases. Each is added in its own
 PR, reviewed on its own merits, once there is a concrete reason to introduce
 it.
+
+## PR-003 — Embeddable chat widget + streaming
+
+The first visual, end-to-end experience: a demo course page embeds a small
+widget that asks questions against the PR-002 RAG flow and gets answers
+back progressively over SSE, with citations. No change to
+`domain/`, `application/`, or `infrastructure/` — this PR is entirely a thin
+transport layer (one new route) plus two static frontend files, reusing
+`QueryService` exactly as PR-002 built it.
+
+### New surface
+
+```
+src/agentic_learning_platform/routes/query_stream.py   # POST /v1/query/stream
+web/demo/index.html                                     # served at GET /demo
+web/widget/widget.js                                     # served at GET /widget/widget.js
+```
+
+Both `web/` directories are mounted via Starlette's `StaticFiles` in
+`app.py` — no new backend dependency, no npm, no bundler, no frontend
+framework. `Dockerfile` copies `web/` into the runtime image alongside `src/`.
+
+### Why the RAG pipeline runs *before* the stream opens, not inside it
+
+`query_stream()` calls `await query_service.answer(question)` — the exact
+same call `/v1/query` makes — and only *then* returns a `StreamingResponse`
+that paces the already-complete `QueryAnswer` out over SSE. This is
+deliberate: once SSE headers are sent, the HTTP status is locked in at 200;
+an error inside the generator can only be smuggled to the client as another
+SSE event, not as a proper HTTP error status. Retrieval errors, evidence-check
+logic, generator failures, and input validation all still produce ordinary
+HTTP error responses (422, 500, ...) exactly as they do for `/v1/query`. The
+generator's own `event: error` exists purely as a defensive fallback for a
+failure *during emission itself* (e.g. the client disconnecting mid-stream)
+— it is not, and must not become, the error-handling path for the RAG
+pipeline.
+
+### Streaming is transport-level pacing, not real model streaming — in *either* mode
+
+`ExtractiveAnswerGeneratorAdapter` returns its full answer synchronously;
+`BedrockAnswerGeneratorAdapter` calls `ChatBedrockConverse.ainvoke` (not
+`.astream`). Neither adapter can produce tokens incrementally today, so
+`query_stream.py` takes the finished answer text and paces it out
+word-by-word with a small `asyncio.sleep` between words
+(`settings.stream_chunk_delay_ms`, default 40ms) — this exists to demonstrate
+the SSE contract and the widget's progressive-rendering UX, not to fake an
+LLM "thinking". This applies identically regardless of `runtime_mode`. Real
+token-by-token streaming from Bedrock is future scope: it would add an
+`astream`-shaped method to `IAnswerGeneratorPort` (a real port change, not
+something this PR should reach for) and a second code path in the route that
+uses it instead of pacing a finished string.
+
+### SSE contract
+
+```
+event: token
+data: {"text": "..."}
+      ⋮ (one per word)
+event: citations
+data: {"citations": [{"source": "...", "page": N, "chunk_id": "...", "score": 0.NN}]}
+
+event: done
+data: {}
+```
+
+`citations` always carries the same structured `Citation` fields PR-002
+already exposes via `/v1/query` (`source`, `page`, `chunk_id`, `score`) —
+the client never infers a citation from generated text. The
+"insufficient evidence" case is not special-cased for streaming: it is the
+same `QueryAnswer` (fixed message, `citations=[]`) PR-002 already produces,
+just paced the same way as any other answer.
+
+### SSE over `POST`, not native `EventSource`
+
+The browser's native `EventSource` only issues `GET` requests with no
+request body, which would force the question into a query string —
+worse for a length-limited, potentially sensitive question than a JSON
+POST body. The widget instead calls `fetch()` and manually parses the
+`ReadableStream` body by splitting on blank lines and reading `event:`/
+`data:` prefixes. No WebSockets: nothing here needs the client to send data
+mid-response, so the extra complexity (a persistent bidirectional
+connection, its own reconnection/backpressure concerns) has no
+justification yet.
+
+### Widget: vanilla Web Component, not a framework
+
+`<learning-assistant-widget>` is a single-file Custom Element using Shadow
+DOM for style isolation — no React/Vue/Angular, no bundler, matching the
+brief's "mantenerlo deliberadamente pequeño". Conversation history lives in
+the component's own in-memory state for the page's lifetime only (no
+persistence — not asked for). Everything that comes from the API (answer
+text, citation fields, error messages) is written via `textContent` or
+plain DOM node creation — **never** `innerHTML` — which is what closes XSS
+here without needing a sanitizer dependency.
+
+### CORS: explicit, never `"*"`
+
+`CORSMiddleware` is configured from `settings.cors_allowed_origins_list`
+(parsed from a comma-separated `CORS_ALLOWED_ORIGINS` env var, following the
+same computed-`@property` pattern as `database_dsn`), restricted to `GET`/
+`POST` and the `Content-Type` header. `/demo` is served by this same FastAPI
+app, so it never needs CORS at all — this configuration exists solely for
+embedding the widget on a *different* origin (a real client portal), and the
+shipped default (`http://localhost:8000`) is for local development only.
+
+### Shared input validation: one `QueryRequest`, one limit
+
+`routes/query.py`'s `QueryRequest` (used by both `/v1/query` and
+`/v1/query/stream`) gained a `max_question_length` check via a
+`field_validator`, not `Field(max_length=...)` — the latter would bind
+`get_settings()`'s value once at module-import time; the validator reads
+`get_settings()` per-request instead, so it reflects whatever `Settings` is
+actually active (this also matters for tests, which override env vars and
+clear `get_settings`'s cache per test).
+
+### Explicitly out of scope for PR-003
+
+Real Bedrock token streaming, authentication, multi-tenancy, LangGraph,
+Terraform/ECS/RDS/S3/AWS deployment, Bedrock Knowledge Bases, DOCX/PPTX/XLSX,
+OCR, video, multimodal images, Langfuse/Ragas/DeepEval, analytics, quizzes,
+and agent/tool-calling. No speculative infrastructure was added for any of
+these.
+
+### Known limitations
+
+- The widget has not been exercised inside a host page with a strict
+  Content-Security-Policy; a CSP blocking external scripts would need an
+  explicit allowance for `<script src="/widget/widget.js">`.
+- `stream_chunk_delay_ms` word-by-word pacing is a fixed, simple scheme — it
+  does not account for very long answers needing a shorter per-word delay to
+  stay feeling responsive; not tuned further since this is a demo, not a
+  production UX.
+- **No corpus isolation** (`organization_id`/`course_id`/`user_id`, retrieval
+  filters, or a dedicated test database): the manual demo and `pytest` share
+  the same local Postgres, so leftover documents from one can affect the
+  other's citation assertions — see the README's "Tests and the manual demo"
+  warning for the `docker compose down -v` workaround. Real tenant/document
+  isolation is deferred to a future PR (multi-tenancy is explicitly out of
+  scope here — see above).
+- `app.py`'s `_WEB_DIR = Path("web")` resolves relative to the current
+  working directory, which happens to be correct in all three validated
+  environments (`pytest`, `make run`, the Docker image) but is an implicit
+  assumption, not enforced by a setting. Minor technical debt — revisit only
+  if a future deployment changes the process's working directory (it would
+  fail loudly at startup via `StaticFiles`' own `RuntimeError`, not silently).
+- The widget has no client-side request timeout or `AbortController` — a
+  hung server response leaves the "Pensando..." indicator and a disabled
+  composer indefinitely. Deferred as a future UX-resilience improvement, not
+  needed for this PR's demo scope.
