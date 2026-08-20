@@ -15,7 +15,6 @@ from agentic_learning_platform.application.ports.authorization_context_port impo
 )
 from agentic_learning_platform.application.ports.document_parser_port import IDocumentParserPort
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
-from agentic_learning_platform.application.ports.lexical_search_port import ILexicalSearchPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
 from agentic_learning_platform.config import Settings
 from agentic_learning_platform.infrastructure.answer_generation.bedrock_answer_adapter import (
@@ -32,9 +31,6 @@ from agentic_learning_platform.infrastructure.embeddings.bedrock_embedding_adapt
 )
 from agentic_learning_platform.infrastructure.embeddings.local_embedding_adapter import (
     LocalEmbeddingAdapter,
-)
-from agentic_learning_platform.infrastructure.lexical_search.postgres_fts_adapter import (
-    PostgresLexicalSearchAdapter,
 )
 from agentic_learning_platform.infrastructure.parsers.docling_parser_adapter import (
     DoclingParserAdapter,
@@ -72,15 +68,6 @@ def build_adapters(settings: Settings, pool: asyncpg.Pool) -> Adapters:
         vector_store=vector_store,
         answer_generator=ExtractiveAnswerGeneratorAdapter(),
     )
-
-
-def build_lexical_search_port(settings: Settings, pool: asyncpg.Pool) -> ILexicalSearchPort | None:
-    """`None` for `retrieval_strategy="vector_only"` — `RetrievalService`
-    takes an absent lexical port as the signal to run its unchanged,
-    vector-only code path (see docs/architecture.md's PR-006 section)."""
-    if settings.retrieval_strategy == "hybrid":
-        return PostgresLexicalSearchAdapter(pool)
-    return None
 
 
 def build_authorization_context_provider(settings: Settings) -> IAuthorizationContextProvider:
