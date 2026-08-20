@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${DB_USER:-agentic_learning}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentic_learning}
+      POSTGRES_DB: ${DB_NAME:-agentic_learning}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-agentic_learning} -d ${DB_NAME:-agentic_learning}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   api:
     build:
       context: .
@@ -9,6 +26,19 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      # Always the compose service name inside this container, regardless of
+      # what .env says (.env's DB_HOST=localhost is for host-side pytest/make
+      # run, not for this container — see .env.example).
+      DB_HOST: postgres
+      # Absolute path matching the fastembed_cache volume mount below,
+      # regardless of .env's host-relative default.
+      FASTEMBED_CACHE_DIR: /app/.cache/fastembed
+    volumes:
+      - fastembed_cache:/app/.cache/fastembed
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -21,3 +51,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+volumes:
+  postgres_data:
+  fastembed_cache:

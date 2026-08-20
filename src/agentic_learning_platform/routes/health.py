@@ -2,7 +2,9 @@
 
 from typing import Literal
 
-from fastapi import APIRouter
+import asyncpg
+from fastapi import APIRouter, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 router = APIRouter(tags=["health"])
@@ -19,11 +21,16 @@ async def health() -> HealthResponse:
 
 
 @router.get("/ready", response_model=HealthResponse)
-async def ready() -> HealthResponse:
-    """Readiness probe.
-
-    There are no external dependencies (database, cache, etc.) yet, so
-    readiness is currently equivalent to liveness. This will start checking
-    real dependencies once they exist.
-    """
+async def ready(request: Request) -> HealthResponse | JSONResponse:
+    """Readiness probe: verifies the database pool can actually run a query,
+    not just that the process is up."""
+    pool: asyncpg.Pool = request.app.state.db_pool
+    try:
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+    except Exception:  # readiness must be robust to any DB failure mode, not just specific ones
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "not_ready"},
+        )
     return HealthResponse(status="ok")
