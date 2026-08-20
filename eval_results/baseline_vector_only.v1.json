@@ -1,0 +1,324 @@
+{
+  "baseline": "vector_only",
+  "dataset": "golden_dataset.v1.json",
+  "generated_at": "2026-08-20T13:08:32.371682+00:00",
+  "git_commit": "a5a0a83",
+  "config": {
+    "retrieval_strategy": "vector_only",
+    "runtime_mode": "local",
+    "retrieval_top_k": 5,
+    "retrieval_score_threshold": 0.35,
+    "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "embedding_dimension": 384
+  },
+  "num_cases": 32,
+  "num_unique_questions": 28,
+  "num_answerable": 26,
+  "num_unanswerable": 6,
+  "metrics": {
+    "recall_at_1": 0.8461538461538461,
+    "recall_at_3": 0.9615384615384616,
+    "recall_at_5": 0.9615384615384616,
+    "mrr": 0.9038461538461539,
+    "citation_accuracy": 0.9615384615384616,
+    "no_evidence_accuracy": 1.0,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.0,
+    "groundedness_local": 1.0
+  },
+  "latency_ms": {
+    "mean": 5.654507789586205,
+    "p50": 5.334249930456281,
+    "p95": 8.07373565621674
+  },
+  "per_case": [
+    {
+      "id": "A1-incident-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.12
+    },
+    {
+      "id": "A2-problem-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 3.91
+    },
+    {
+      "id": "A3-change-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 3.51
+    },
+    {
+      "id": "A4-sla-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 3.92
+    },
+    {
+      "id": "A5-asset-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 3.98
+    },
+    {
+      "id": "A6-cmdb-direct",
+      "category": "A-direct",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 3.44
+    },
+    {
+      "id": "B1-incident-paraphrase",
+      "category": "B-paraphrase",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.98
+    },
+    {
+      "id": "B2-problem-paraphrase",
+      "category": "B-paraphrase",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.77
+    },
+    {
+      "id": "B3-change-paraphrase",
+      "category": "B-paraphrase",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.18
+    },
+    {
+      "id": "B4-cmdb-paraphrase",
+      "category": "B-paraphrase",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 5.15
+    },
+    {
+      "id": "B5-asset-paraphrase",
+      "category": "B-paraphrase",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 7.4
+    },
+    {
+      "id": "C1-sla-synonym",
+      "category": "C-related-terms",
+      "expected_answerable": true,
+      "rank": null,
+      "has_sufficient_evidence": true,
+      "citation_correct": false,
+      "retrieval_latency_ms": 5.07
+    },
+    {
+      "id": "C2-support-tiers-synonym",
+      "category": "C-related-terms",
+      "expected_answerable": true,
+      "rank": 2,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.9
+    },
+    {
+      "id": "C3-asset-inventory-synonym",
+      "category": "C-related-terms",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.89
+    },
+    {
+      "id": "D1-incident-ambiguous",
+      "category": "D-ambiguous",
+      "expected_answerable": true,
+      "rank": 2,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 4.1
+    },
+    {
+      "id": "D2-problem-ambiguous",
+      "category": "D-ambiguous",
+      "expected_answerable": true,
+      "rank": 2,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 4.39
+    },
+    {
+      "id": "D3-level-ambiguous",
+      "category": "D-ambiguous",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 4.92
+    },
+    {
+      "id": "E1-no-evidence-paella",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 5.44
+    },
+    {
+      "id": "E2-no-evidence-capital",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 4.43
+    },
+    {
+      "id": "E3-no-evidence-bubblesort",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 5.67
+    },
+    {
+      "id": "E4-no-evidence-photosynthesis",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 4.36
+    },
+    {
+      "id": "E5-no-evidence-mlsupervised",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 6.67
+    },
+    {
+      "id": "E6-no-evidence-planets",
+      "category": "E-no-evidence",
+      "expected_answerable": false,
+      "rank": null,
+      "has_sufficient_evidence": false,
+      "citation_correct": false,
+      "retrieval_latency_ms": 5.23
+    },
+    {
+      "id": "F1-incident-vs-security-distractor",
+      "category": "F-distractor",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 7.91
+    },
+    {
+      "id": "F2-security-vs-incident-distractor",
+      "category": "F-distractor",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 7.9
+    },
+    {
+      "id": "F3-problem-vs-incident-distractor",
+      "category": "F-distractor",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 8.27
+    },
+    {
+      "id": "G1-crosscourse-101-literal",
+      "category": "G-cross-course",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 4.74
+    },
+    {
+      "id": "G2-crosscourse-201-literal",
+      "category": "G-cross-course",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 6.52
+    },
+    {
+      "id": "G3-crosscourse-101-paraphrase",
+      "category": "G-cross-course",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 5.11
+    },
+    {
+      "id": "G4-crosscourse-201-paraphrase",
+      "category": "G-cross-course",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 5.12
+    },
+    {
+      "id": "H1-crossorg-primary",
+      "category": "H-cross-org",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 5.61
+    },
+    {
+      "id": "H2-crossorg-secondary",
+      "category": "H-cross-org",
+      "expected_answerable": true,
+      "rank": 1,
+      "has_sufficient_evidence": true,
+      "citation_correct": true,
+      "retrieval_latency_ms": 8.31
+    }
+  ]
+}

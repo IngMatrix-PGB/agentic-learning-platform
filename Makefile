@@ -1,4 +1,4 @@
-.PHONY: install run test lint format typecheck check docker-build docker-up docker-down
+.PHONY: install run test eval lint format typecheck check docker-build docker-up docker-down
 
 install:
 	uv sync
@@ -8,6 +8,9 @@ run:
 
 test:
 	uv run pytest
+
+eval:
+	uv run python -m agentic_learning_platform.evals.run_eval
 
 lint:
 	uv run ruff check .

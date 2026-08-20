@@ -620,3 +620,264 @@ own PR, once there is a concrete reason to introduce it.
   not depend on Python being run without `-O` — confirmed neither the
   Dockerfile nor CI ever pass that flag. Noted here only because it looks,
   at a glance, like the assert is load-bearing for security.
+
+## PR-005 — RAG Evals & Quality Baseline
+
+A **measurement** PR, not an improvement one: it exists to produce a
+reproducible, honest baseline of the current (`local`, vector-only) RAG
+system's quality, so a future PR-006 (Hybrid Retrieval) has something real
+to compare against. **No retrieval/chunking/embedding/threshold/ranking
+code, and no `QueryService`/`IngestionService`/pgvector query, was modified
+to build this** — the eval harness is entirely additive, calling the exact
+same production services (`RetrievalService`, `QueryService`,
+`IngestionService`, `infrastructure.di.build_adapters`) the app itself uses.
+A discovered quality issue (see "What this baseline found" below) is
+reported here, not fixed — fixing it is PR-006's job, once it exists to
+improve retrieval quality specifically.
+
+### Why `RetrievalService` (raw) and `QueryService` (post-threshold) are both used
+
+`RetrievalService.retrieve()` already returns the *complete* ranked
+`list[SearchResult]` (up to `retrieval_top_k`), independent of the evidence
+threshold. `QueryService.answer()` is where the threshold decision happens —
+when `has_sufficient_evidence` is `False`, it returns `citations=[]`,
+discarding the ranked results entirely. Using `QueryService` alone for
+Recall@K would conflate two different questions this PR needs to answer
+separately: "did retrieval find the right chunk?" (a ranking question) vs.
+"did the system decide there was enough evidence?" (a threshold question).
+So:
+
+- **Recall@1/3/5, MRR** — computed from `RetrievalService.retrieve()`'s raw
+  results, *before* the threshold is applied.
+- **Citation Accuracy, No-Evidence Accuracy, False Positive/Negative Rate** —
+  computed from `QueryService.answer()`, *after* the threshold is applied.
+
+No changes were needed to either service to expose this — both already
+returned everything required.
+
+### Golden dataset: `eval_data/golden_dataset.v1.json`
+
+32 cases (26 answerable, 6 no-evidence), each identified by
+`expected_source` + `expected_pages` — **never `expected_chunk_ids`**:
+`chunk_id`s are `uuid4()`-generated at ingestion time and are not stable
+across the deterministic re-ingestion this harness performs on every run
+(see below); pinning to them would make the dataset fragile for no benefit,
+since source/page is already the stable identity the rest of this
+codebase's tests use. Categories (by question-design intent, not by a
+property the harness enforces):
+
+| Category | Count | Tests |
+|---|---|---|
+| A — direct evidence | 6 | literal term match |
+| B — paraphrase | 5 | semantic retrieval, no literal term overlap |
+| C — related terms/synonyms | 3 | different vocabulary than the source text |
+| D — ambiguous | 3 | vague phrasing that could plausibly match more than one chunk |
+| E — no-evidence | 6 | genuinely unrelated questions |
+| F — same-course distractor | 3 | lexically-overlapping but wrong document in the same course |
+| G — cross-course | 4 (2 pairs) | near-duplicate content in a different course, same organization |
+| H — cross-organization | 2 (1 pair) | near-duplicate content in a different organization entirely |
+
+**32 cases, 28 unique question formulations.** Three groups intentionally
+reuse question text — this is not incidental, it is what a *paired*
+cross-scope comparison means: G1/G2 (and G3/G4) *must* ask the identical
+question against two different courses for the pairing to test anything;
+H1/H2 the same, across two organizations. The one genuinely avoidable
+overlap (flagged in code review) is that `A1-incident-direct` happened to
+land on the exact same natural phrasing as G1/G2
+(*"¿Qué es la gestión de incidentes?"*) — A1 was not required to match, it
+simply used the most direct wording independently. The three duplicate
+groups, exactly:
+
+- `A1-incident-direct`, `G1-crosscourse-101-literal`, `G2-crosscourse-201-literal`
+- `G3-crosscourse-101-paraphrase`, `G4-crosscourse-201-paraphrase`
+- `H1-crossorg-primary`, `H2-crossorg-secondary`
+
+`load_golden_dataset()`/the report surface this honestly rather than
+implying 32 independent signals: the report's `num_unique_questions` field
+(`report.py`) is computed separately from `num_cases`, and
+`tests/evals/test_dataset.py::test_shipped_dataset_has_exactly_the_documented_duplicate_questions`
+pins down that these three groups are the *only* duplication, so a new,
+undocumented one would fail the test rather than pass silently.
+
+Versioned by filename (`v1`) — a dataset change significant enough to
+affect comparability gets a new file, visible in the diff, rather than an
+internal version field that could silently drift from the file's actual
+content. Validated at load time (`dataset.py`): no blank `category`, and
+every `category` prefix must be one of `A`-`H` — an unrecognized or missing
+category fails fast rather than silently not counting toward any coverage
+check.
+
+#### Categories B and C, revised after adversarial review
+
+An adversarial review of the first version of this dataset found that
+categories B ("paraphrase") and C ("related terms") retained substantial
+literal overlap with the source text — e.g. the original B1
+(*"¿Cómo se restaura un servicio interrumpido lo más rápido posible?"*)
+reused five consecutive words from the source verbatim
+(*"...restaurar el servicio interrumpido lo mas rapido posible..."*),
+making it a weak test of genuine semantic-only retrieval despite its
+category label. All 5 B cases and all 3 C cases were rewritten by semantic
+intent alone — reformulating what the source page *means* without reusing
+its distinctive phrases — **before** running the evaluator, and were not
+revisited afterward based on the resulting scores (see "What this baseline
+found" below for the honest before/after). `expected_source`/`expected_pages`
+were re-verified against the corpus and left unchanged for every case — the
+ground truth was already correct, only the question wording changed.
+
+### Synthetic evaluation corpus
+
+Six short documents (`evals/corpus.py`), generated via FPDF at eval-run
+time (same pattern as `tests/conftest.py`'s `sample_pdf_bytes` — no binary
+fixture file, no licensing question), spanning IT service management
+topics (Incident/Problem/Change Management, SLAs, Asset Management/CMDB,
+Support Tiers, a Security Policy) plus two deliberate near-duplicates of
+the Incident Management page: one in a second course of the same
+organization, one in a second organization entirely — authored specifically
+to give categories G and H something real to fail against if isolation
+were ever broken.
+
+### Metric definitions
+
+- **Recall@K** (K ∈ {1,3,5}): fraction of answerable cases where a result
+  matching `(expected_source, page ∈ expected_pages)` appears within the
+  first K raw retrieval results.
+- **MRR**: mean of `1/rank` over answerable cases (rank = 1-indexed position
+  of the first matching raw result; `0` if no match within `retrieval_top_k`).
+- **Citation Accuracy**: fraction of answerable cases where
+  `has_sufficient_evidence` is `True` **and** at least one returned citation
+  matches `(expected_source, page ∈ expected_pages)` — a citation is never
+  scored correct independent of the sufficiency decision that produced it.
+- **No-Evidence Accuracy**: fraction of no-evidence cases correctly rejected
+  (`has_sufficient_evidence == False`) — a plain true-negative rate.
+- **False Positive Rate**: `1 - No-Evidence Accuracy` — no-evidence cases the
+  system incorrectly treated as having evidence.
+- **False Negative Rate**: fraction of answerable cases incorrectly rejected
+  as insufficient — real evidence existed but the threshold (or a retrieval
+  miss) caused a rejection.
+- **Groundedness (local)**: fraction of the extractive answer's segments
+  (split on the `"\n\n---\n\n"` separator `ExtractiveAnswerGeneratorAdapter`
+  joins multiple pieces of evidence with) that appear verbatim among the
+  retrieved evidence's own content. Expected to be `1.0` in `local` mode by
+  construction — the extractive generator never paraphrases, so there is
+  nothing to hallucinate. Defined generally (not hardcoded to `1.0`) because
+  the same check against a future real-generation (Bedrock) answer would be
+  genuinely informative — no `IAnswerQualityPort`/LLM-judge abstraction was
+  built for that yet, deliberately: that interface should be designed
+  against a real generation case, not speculatively (see "Explicitly out of
+  scope" below).
+
+All of the above are pure Python (`evals/metrics.py`) — no Ragas, DeepEval,
+or other eval framework. None of these formulas need semantic/LLM judgment;
+adding one of those frameworks now would import a runtime built around
+LLM-as-judge to solve a problem (deterministic structural comparison) this
+PR doesn't have.
+
+### Latency
+
+Measured in-process, isolated around `RetrievalService.retrieve()` alone
+(embedding + SQL search combined) — not via HTTP/ASGI, which would conflate
+retrieval latency with unrelated transport overhead. `mean`/`p50`/`p95` over
+one sample per case, sequential execution, no concurrency — a same-environment
+PR-005-vs-PR-006 comparison tool, explicitly not an infrastructure/capacity
+benchmark.
+
+### Database isolation
+
+The harness owns a dedicated database (`{db_name}_eval`, e.g.
+`agentic_learning_eval`) — dropped and recreated (`DROP DATABASE IF EXISTS
+... WITH (FORCE)` + `CREATE DATABASE`, via the new
+`infrastructure.db.database_admin.recreate_database`) at the start of every
+`make eval` run, for full determinism, and left in place afterward so its
+contents can be inspected when a result looks surprising. This is a third,
+separate database from both the demo's (`agentic_learning`) and `pytest`'s
+own ephemeral per-session one (`tests/conftest.py`) — none of the three ever
+share data. Every golden case carries its own `organization_id`/`course_id`,
+resolved into a `RequestContext` per case exactly as a real request would be
+— the harness never performs a global, unscoped retrieval call.
+
+### `make eval`
+
+```bash
+docker compose up -d postgres   # same prerequisite as `make test`
+make eval                        # uv run python -m agentic_learning_platform.evals.run_eval
+```
+
+Writes `eval_results/baseline_vector_only.v1.json` and prints a
+human-readable summary to the terminal. The output path is named after the
+retrieval strategy it measures — not a generic `eval_results.json` — so a
+future PR-006 run writes its own `eval_results/hybrid_retrieval.v1.json`
+alongside it instead of silently overwriting this baseline (flagged in code
+review: a generic filename would have made exactly that overwrite the
+default behavior). `config.retrieval_strategy` inside the JSON (currently
+always `"vector_only"`) is the field a future comparison script would key
+on; the top-level `baseline` field is kept as a human-friendly duplicate of
+the same value.
+
+Before running, the harness validates `retrieval_top_k >= 5` and fails fast
+with `EvalConfigurationError` if not — this report always computes
+Recall@5, which a lower `retrieval_top_k` would silently cap (e.g. at
+whatever Recall@3 already measures), misrepresenting it as a genuine top-5
+result.
+
+### Tests vs. evals
+
+`tests/evals/test_metrics.py`, `tests/evals/test_dataset.py`, and
+`tests/evals/test_runner_validation.py` test the harness's own arithmetic,
+the shipped dataset's schema, and the pre-flight `retrieval_top_k` guard —
+small, hand-built fixtures, no DB, no retrieval. The 32 golden questions
+themselves are **not** pytest assertions: they measure RAG quality, which
+drifts and is judged by degree, not software correctness, which either
+holds or doesn't.
+
+### What this baseline found (reported, not fixed)
+
+**Before** the categories B/C rewrite below: Recall@1 = 0.923, Recall@3 =
+1.0, Recall@5 = 1.0, MRR = 0.962, Citation Accuracy = 1.0.
+
+An adversarial review found that the original B ("paraphrase") and C
+("related terms") questions retained substantial literal overlap with the
+source text, making them a weak test of genuine semantic-only retrieval.
+All 8 were rewritten by semantic intent alone, `expected_source`/
+`expected_pages` re-verified and left unchanged, and the evaluator run
+**exactly once** against the rewritten dataset — the questions were not
+revisited afterward based on the resulting scores.
+
+**After**: **Recall@1 = 0.846 (22/26), Recall@3 = 0.962 (25/26), Recall@5 =
+0.962 (25/26), MRR = 0.904, Citation Accuracy = 0.962** — all four metrics
+**dropped** relative to the flawed dataset. Four cases, not two, now miss
+rank 1:
+
+- `D1-incident-ambiguous`, `D2-problem-ambiguous` — unchanged from before
+  (rank 2, recovered by Recall@3), see the D1/D2 analysis above.
+- `C2-support-tiers-synonym` (new) — rank 2: *"Cuando la persona que atiende
+  un caso no logra resolverlo, ¿a quién se lo transfiere para que alguien
+  con mayor experiencia lo intente?"* scored 0.3829 against
+  `itsm_glossary.pdf` p.2 (Problem Management) vs. 0.3161 against the
+  expected `sla_and_support.pdf` p.1 — recovered by Recall@3.
+- `C1-sla-synonym` (new, and the most significant finding) — **rank not
+  found at all within top-5**: *"¿Qué compromiso formal establece qué tan
+  rápido debe atenderse a quien reporta una falla?"* never retrieves the
+  actual SLA page (`itsm_glossary.pdf` p.4) in the top 5 results; the
+  system instead ranks Problem Management (0.4822), Incident Management
+  (0.4702), the Security Policy (0.4368), and Support Tiers (0.3569) all
+  higher, and confidently reports `has_sufficient_evidence=True` — the one
+  wrong citation in this run (`citation_correct=False`). This is a genuine,
+  not cosmetic, retrieval miss on a paraphrase that never uses the source's
+  own SLA-specific vocabulary. **Not corrected** — this is precisely the
+  kind of case Hybrid Retrieval (PR-006) should be measured against.
+
+Every other category (A-direct, F-distractor, G-cross-course,
+H-cross-organization) is completely unchanged and still ranks correctly at
+position 1; No-Evidence Accuracy, False Positive/Negative Rate, and
+Groundedness are all unchanged (`1.0`/`0.0`/`0.0`/`1.0`). Per this PR's
+explicit mandate, both the before and after numbers are reported as-is —
+**no retrieval/ranking code was touched, and the questions were not tuned
+after seeing the drop**.
+
+### Explicitly out of scope for PR-005
+
+BM25, RRF, reranking, Hybrid Retrieval, LangGraph, an `IAnswerQualityPort`/
+LLM-as-judge abstraction (deferred until real generation exists to design it
+against), real Bedrock, S3, Terraform, AWS deployment, Cognito/JWT, any
+widget/UX change, and any retrieval tuning aimed at improving the numbers
+above.
