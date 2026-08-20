@@ -18,16 +18,20 @@ class PgVectorStoreAdapter(IVectorStorePort):
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    async def find_by_checksum(self, checksum_sha256: str) -> SourceDocument | None:
+    async def find_by_checksum(
+        self, checksum_sha256: str, *, organization_id: str, course_id: str
+    ) -> SourceDocument | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                SELECT id, source_name, checksum_sha256, mime_type, file_size,
-                       page_count, processing_status, uploaded_at
+                SELECT id, organization_id, course_id, source_name, checksum_sha256,
+                       mime_type, file_size, page_count, processing_status, uploaded_at
                 FROM source_documents
-                WHERE checksum_sha256 = $1
+                WHERE checksum_sha256 = $1 AND organization_id = $2 AND course_id = $3
                 """,
                 checksum_sha256,
+                organization_id,
+                course_id,
             )
         return _row_to_source_document(row) if row is not None else None
 
@@ -40,11 +44,13 @@ class PgVectorStoreAdapter(IVectorStorePort):
             await conn.execute(
                 """
                 INSERT INTO source_documents
-                    (id, source_name, checksum_sha256, mime_type, file_size,
-                     page_count, processing_status, uploaded_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    (id, organization_id, course_id, source_name, checksum_sha256,
+                     mime_type, file_size, page_count, processing_status, uploaded_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 """,
                 document.id,
+                document.organization_id,
+                document.course_id,
                 document.source_name,
                 document.checksum_sha256,
                 document.mime_type,
@@ -56,14 +62,16 @@ class PgVectorStoreAdapter(IVectorStorePort):
             await conn.executemany(
                 """
                 INSERT INTO document_chunks
-                    (id, document_id, source_name, page_number, chunk_index, content,
-                     embedding, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    (id, document_id, organization_id, course_id, source_name,
+                     page_number, chunk_index, content, embedding, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 """,
                 [
                     (
                         chunk.id,
                         chunk.document_id,
+                        chunk.organization_id,
+                        chunk.course_id,
                         chunk.source_name,
                         chunk.page_number,
                         chunk.chunk_index,
@@ -75,17 +83,33 @@ class PgVectorStoreAdapter(IVectorStorePort):
                 ],
             )
 
-    async def search(self, query_embedding: list[float], *, top_k: int) -> list[SearchResult]:
+    async def search(
+        self,
+        query_embedding: list[float],
+        *,
+        organization_id: str,
+        course_id: str,
+        top_k: int,
+    ) -> list[SearchResult]:
         async with self._pool.acquire() as conn:
+            # WHERE is applied here, before ORDER BY/LIMIT, in one statement —
+            # never a global top-k fetch filtered afterward in Python. See
+            # docs/architecture.md's PR-004 section for why organization_id/
+            # course_id live directly on this table (not just on
+            # source_documents, requiring a JOIN here that pgvector's HNSW
+            # index cannot use as efficiently).
             rows = await conn.fetch(
                 """
                 SELECT id, document_id, source_name, page_number, chunk_index, content,
                        1 - (embedding <=> $1) AS score
                 FROM document_chunks
+                WHERE organization_id = $2 AND course_id = $3
                 ORDER BY embedding <=> $1
-                LIMIT $2
+                LIMIT $4
                 """,
                 query_embedding,
+                organization_id,
+                course_id,
                 top_k,
             )
         return [
@@ -105,6 +129,8 @@ class PgVectorStoreAdapter(IVectorStorePort):
 def _row_to_source_document(row: asyncpg.Record) -> SourceDocument:
     return SourceDocument(
         id=row["id"],
+        organization_id=row["organization_id"],
+        course_id=row["course_id"],
         source_name=row["source_name"],
         checksum_sha256=row["checksum_sha256"],
         mime_type=row["mime_type"],

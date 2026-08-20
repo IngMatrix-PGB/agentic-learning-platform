@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
-from agentic_learning_platform.domain.models import SearchResult
+from agentic_learning_platform.domain.models import RequestContext, SearchResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,9 +33,14 @@ class RetrievalService:
         self._top_k = top_k
         self._score_threshold = score_threshold
 
-    async def retrieve(self, question: str) -> RetrievalOutcome:
+    async def retrieve(self, question: str, context: RequestContext) -> RetrievalOutcome:
         query_embedding = await self._embedding_port.embed_text(question)
-        results = await self._vector_store_port.search(query_embedding, top_k=self._top_k)
+        results = await self._vector_store_port.search(
+            query_embedding,
+            organization_id=context.organization_id,
+            course_id=context.course_id,
+            top_k=self._top_k,
+        )
 
         has_sufficient_evidence = bool(results) and results[0].score >= self._score_threshold
         return RetrievalOutcome(results=results, has_sufficient_evidence=has_sufficient_evidence)

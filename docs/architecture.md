@@ -371,13 +371,9 @@ these.
   does not account for very long answers needing a shorter per-word delay to
   stay feeling responsive; not tuned further since this is a demo, not a
   production UX.
-- **No corpus isolation** (`organization_id`/`course_id`/`user_id`, retrieval
-  filters, or a dedicated test database): the manual demo and `pytest` share
-  the same local Postgres, so leftover documents from one can affect the
-  other's citation assertions — see the README's "Tests and the manual demo"
-  warning for the `docker compose down -v` workaround. Real tenant/document
-  isolation is deferred to a future PR (multi-tenancy is explicitly out of
-  scope here — see above).
+- ~~No corpus isolation~~ — **resolved in PR-004** (see below): retrieval is
+  now scoped to `organization_id`/`course_id` in SQL, and `pytest` runs
+  against its own ephemeral database instead of sharing the demo's.
 - `app.py`'s `_WEB_DIR = Path("web")` resolves relative to the current
   working directory, which happens to be correct in all three validated
   environments (`pytest`, `make run`, the Docker image) but is an implicit
@@ -388,3 +384,239 @@ these.
   hung server response leaves the "Pensando..." indicator and a disabled
   composer indefinitely. Deferred as a future UX-resilience improvement, not
   needed for this PR's demo scope.
+
+## PR-004 — Context isolation & authorization foundation
+
+PR-002/PR-003 confirmed empirically (contaminated test/demo corpus) that
+retrieval had no scope at all: `PgVectorStoreAdapter.search()` ran
+`ORDER BY embedding <=> $1 LIMIT $2` over the entire `document_chunks` table,
+with no `WHERE`. This PR closes that at the SQL layer and adds a minimal,
+explicitly-provisional authorization boundary — no LangGraph, hybrid
+retrieval, reranking, real auth (Cognito/OIDC/JWT), or organization/course
+administration are introduced here; each is out of scope until there is a
+concrete reason to build it.
+
+### Data model: `organization_id`/`course_id`, scoped to both tables
+
+`source_documents` and `document_chunks` both gained `organization_id` and
+`course_id` (`TEXT`, not `UUID` — see "Why TEXT, not UUID" below). This is
+denormalized on purpose: no `organizations`/`courses` tables exist yet (that
+belongs to the portal's identity system, whose shape isn't known), and
+duplicating the two columns onto `document_chunks` — not just
+`source_documents` — is what lets retrieval filter with a plain `WHERE`
+directly on the table carrying the HNSW index, in one query, before
+`ORDER BY ... LIMIT`:
+
+```sql
+SELECT id, document_id, source_name, page_number, chunk_index, content,
+       1 - (embedding <=> $1) AS score
+FROM document_chunks
+WHERE organization_id = $2 AND course_id = $3
+ORDER BY embedding <=> $1
+LIMIT $4
+```
+
+A `JOIN` back to `source_documents` for the same filter would work
+correctly too (the `WHERE` still runs before `LIMIT` either way), but
+pgvector's ANN index cannot be used as effectively when the filter column
+lives on the joined table rather than directly on `document_chunks` — this
+denormalization is the standard pattern for multi-tenant pgvector search,
+not a deviation from normalization for its own sake. A composite btree
+index `(organization_id, course_id)` on `document_chunks` backs this filter.
+
+Both tables' scope columns are only ever written together, from the same
+`SourceDocument`/`DocumentChunk` objects, in the single transaction
+`PgVectorStoreAdapter.insert_document()` already used — but an adversarial
+review of this PR correctly pointed out that this was, at first, only
+*application code discipline* (one call site), not something the schema
+itself enforced. Migration 002 now closes that gap structurally:
+
+```sql
+ALTER TABLE source_documents
+    ADD CONSTRAINT source_documents_id_org_course_key
+    UNIQUE (id, organization_id, course_id);
+
+ALTER TABLE document_chunks
+    ADD CONSTRAINT document_chunks_document_id_fkey
+    FOREIGN KEY (document_id, organization_id, course_id)
+    REFERENCES source_documents (id, organization_id, course_id)
+    ON DELETE CASCADE;
+```
+
+The composite FK replaces the original single-column
+`document_chunks.document_id -> source_documents.id` FK rather than
+supplementing it: any row satisfying the 3-column match necessarily
+satisfies the 1-column one too, so keeping both would only add a redundant
+constraint enforcing a strict subset of the same rule. `ON DELETE CASCADE`
+is unchanged in effect — deleting a `source_documents` row still deletes all
+of its chunks. A chunk insert whose `organization_id`/`course_id` doesn't
+match its `document_id`'s row in `source_documents` is now rejected by
+PostgreSQL itself (`asyncpg.ForeignKeyViolationError`), inside the same
+transaction `insert_document()` already runs — verified against real
+Postgres in `test_insert_document_rejects_a_chunk_scoped_to_a_different_course_than_its_document`.
+
+### Why TEXT, not UUID
+
+`organization_id`/`course_id` are opaque strings, in both `RequestContext`
+(Python) and the database (`TEXT` columns) — not `UUID`. Every other ID in
+this codebase is a `UUID` generated internally (`SourceDocument.id`,
+`DocumentChunk.id`, ...), but these two identify entities that will
+eventually come from an external identity provider (Cognito, a generic
+OIDC provider, or an LMS) whose ID format is not yet decided. Forcing UUID
+now risks rejecting a legitimate external ID later for a purely internal
+reason. `user_id` is `str` for the same reason. asyncpg parameterizes every
+query (`$1`, `$2`, ...), so accepting arbitrary opaque strings here carries
+no SQL injection risk.
+
+### Idempotency: scoped, not global
+
+`source_documents.checksum_sha256 UNIQUE` (global) became
+`UNIQUE (organization_id, course_id, checksum_sha256)`: the same PDF bytes
+(e.g. a shared syllabus) can now exist as independent documents in different
+courses, while re-uploading the same bytes into the *same* course remains a
+no-op (`already_existed: true`, `chunks_created: 0`), exactly as PR-002
+established.
+
+### Migration: `002_add_org_course_scope.sql`, requires a clean database
+
+Cannot edit `001_init_rag_schema.sql` (the runner's checksum tracking would
+raise `MigrationConflictError` against any already-migrated database). The
+new migration's `ADD COLUMN ... NOT NULL` fails against a table with
+existing rows — since there is no production data yet (and no meaningful
+placeholder scope for old local demo rows), the migration requires a clean
+database rather than backfilling a fake scope. Run
+`docker compose down -v` before the first boot on this schema version.
+
+### `RequestContext` and `IAuthorizationContextProvider`
+
+```python
+@dataclass(frozen=True, slots=True)
+class RequestContext:
+    organization_id: str
+    course_id: str
+    user_id: str
+```
+
+Lives in `domain/models.py` alongside the other framework-free models.
+`IAuthorizationContextProvider` (`application/ports/authorization_context_port.py`)
+is a new port, following the same `ABC` pattern as the four PR-002 ports:
+`resolve(*, organization_id, course_id, user_id) -> RequestContext`, raising
+`MissingAuthorizationContextError` (401) if any of the three is missing or
+blank. `infrastructure/authorization/dev_header_provider.py`'s
+`DevHeaderAuthorizationContextProvider` is the **only** implementation in
+this PR — wired via a small `build_authorization_context_provider(settings)`
+factory in `di.py`, mirroring `build_adapters`. A future PR replaces this one
+factory function with a real JWT/OIDC-backed provider; `QueryService`,
+`IngestionService`, the domain, and every route stay unchanged, because they
+only ever depend on the `RequestContext` the port already resolved, never on
+how it was resolved.
+
+**`X-Organization-Id` / `X-Course-Id` / `X-User-Id` are a development
+authorization context / trusted local context — NOT authentication.** Any
+client can set any value for them; there is no verification of who is
+actually asking. This is explicitly acceptable for local development and
+demo purposes only, and must never be treated as a security boundary in any
+real deployment. `user_id` flows through for logging/audit only — it never
+participates in the retrieval scope filter (that's `organization_id`/
+`course_id` alone).
+
+### Request flow
+
+`routes/authorization.py`'s `get_request_context` is a single shared FastAPI
+dependency used identically by `/v1/documents`, `/v1/query`, and
+`/v1/query/stream` — it resolves the three headers into a `RequestContext`
+before the route body runs. Neither request body (`QueryRequest`, the
+multipart upload) has any organization/course field at all, so there is no
+client-supplied value that could contradict the resolved context — the
+scope is structurally the header-resolved one or the request fails, with no
+third option to reconcile.
+
+`IngestionService.ingest(...)`, `RetrievalService.retrieve(...)`, and
+`QueryService.answer(...)` all gained a required `context: RequestContext`
+parameter (not injected via a constructor — these services are process-wide
+singletons on `app.state`, built once at startup; scope only exists
+per-request, so it has to travel as a method argument). `IVectorStorePort`'s
+`find_by_checksum`/`search` gained required `organization_id`/`course_id`
+keyword parameters for the same reason — making them required, not optional,
+turns "forgot to scope a query" into a type error `pyright --strict` catches,
+not a convention someone can silently skip.
+
+For `/v1/query/stream`, context resolution happens exactly like question
+validation already did in PR-003: before `StreamingResponse` is
+constructed, so a missing/invalid context is a normal HTTP 401, never a
+broken SSE stream. The `token* → citations → done` contract is otherwise
+unchanged.
+
+### Widget/demo
+
+The widget gained `organization-id`/`course-id`/`user-id` attributes (same
+pattern as the existing `api-base`), sent as the three headers on every
+`fetch()` call. `web/demo/index.html` sets fixed dev values with a visible
+HTML comment warning they are not real authentication.
+`scripts/demo_local.sh`'s `curl` calls carry the same headers. `CORSMiddleware`'s
+`allow_headers` now includes the three custom headers — otherwise a
+cross-origin widget's preflight would be rejected by the browser before the
+request is ever sent (same-origin requests, like the `/demo` page's, never
+needed CORS at all).
+
+### Test database isolation
+
+`tests/conftest.py` gained a session-scoped `_isolated_test_database`
+fixture: it issues `CREATE DATABASE pytest_<random>` on the same Postgres
+server the demo uses (the `agentic_learning` role created by the official
+Postgres image is a superuser within its own container, so `CREATEDB` is
+already available — no new credentials needed), points `Settings` at it for
+the whole test session, and drops it at teardown. Real Postgres/pgvector,
+zero mocks, and zero new Docker services — `pytest` no longer shares any
+state with `docker compose up`'s manual demo database. The `client` fixture
+also gained default `X-Organization-Id`/`X-Course-Id`/`X-User-Id` headers
+(httpx merges per-request headers over client defaults), so every existing
+PR-001/002/003 test kept working without being individually edited.
+
+### The adversarial test
+
+`tests/test_corpus_isolation.py` uploads byte-for-byte identical PDF content
+into `org-A/course-A`, `org-A/course-B`, and `org-B/course-A` — the same
+`course_id` string ("course-A") reused across two different organizations,
+deliberately. Identical content means identical FastEmbed embeddings, which
+means an unscoped or incorrectly-scoped query would tie on similarity score
+and could easily return another scope's chunks in the top-k. The test
+asserts on actual `chunk_id`s returned in each scope's citations — pairwise
+disjoint across all three scopes, both directions at once — never just on
+HTTP status. The same property is verified again for `/v1/query/stream`
+against `/v1/query`, since both must resolve context identically.
+
+### Explicitly out of scope for PR-004
+
+Cognito, real JWT/OIDC, a login UI, IAM Identity Center integration,
+`organizations`/`courses` CRUD administration, complex roles/permissions,
+LangGraph, BM25/RRF/reranking/hybrid retrieval, advanced evals, real Bedrock
+token streaming, Terraform/ECS/RDS/S3/AWS deployment. Each is added in its
+own PR, once there is a concrete reason to introduce it.
+
+### Known limitations
+
+- The dev header provider is, by construction, trivially spoofable by any
+  client — this is the entire, explicit point of it being DEV ONLY; it must
+  be replaced before any real deployment, not hardened in place.
+- `organization_id`/`course_id` have no registry to validate against (no
+  `organizations`/`courses` tables) — any non-blank string is accepted as a
+  valid scope today. Acceptable pre-launch; revisit once the identity
+  provider decision is made.
+- pgvector's ability to use the HNSW index efficiently alongside an
+  additional `WHERE` filter is a known nuanced topic across pgvector
+  versions; not a concern at this MVP's scale, but worth revisiting if a
+  single course's chunk count grows very large.
+- `MissingAuthorizationContextError`'s message names exactly which headers
+  were missing/blank — acceptable for a DEV-ONLY mechanism, but this
+  specific, mechanism-describing message should be revisited (generalized to
+  a plain 401 with no internal detail) once a real auth provider replaces
+  `DevHeaderAuthorizationContextProvider`. Deliberately not changed now —
+  flagged in code review, deferred rather than touched speculatively ahead
+  of that replacement.
+- The `assert` in `DevHeaderAuthorizationContextProvider.resolve()` exists
+  only for pyright's type narrowing; the actual validation is the preceding
+  `if not all(values): raise` (a plain `if`, not the `assert`), so this does
+  not depend on Python being run without `-O` — confirmed neither the
+  Dockerfile nor CI ever pass that flag. Noted here only because it looks,
+  at a glance, like the assert is load-bearing for security.

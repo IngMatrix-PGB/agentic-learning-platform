@@ -35,12 +35,29 @@ service. The API applies its own migrations on startup. The first run also
 downloads the local embedding model (~0.2GB) into a persistent Docker
 volume — later runs reuse it, no internet access needed after that.
 
+Upgrading an existing local checkout to PR-004's schema (migration
+`002_add_org_course_scope.sql`) requires a clean database — it adds
+`NOT NULL` columns with no meaningful value to backfill onto old local demo
+data:
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```
+
 - `GET /health` — liveness probe.
 - `GET /ready` — readiness probe; verifies the database is actually reachable.
 - `POST /v1/documents` — upload a PDF (multipart `file` field).
 - `POST /v1/query` — `{"question": "..."}` → `{"answer": "...", "citations": [...]}`.
 - `POST /v1/query/stream` — same question, answer paced over Server-Sent
   Events (see "Widget, demo page and streaming" below).
+
+All three above **require** `X-Organization-Id`, `X-Course-Id`, and
+`X-User-Id` headers (PR-004) — a **development authorization context /
+trusted local context, NOT real authentication**. Any client can set any
+value; there is no verification of who is asking. Missing or blank headers
+return `401`. See `docs/architecture.md`'s PR-004 section for why, and for
+the future PR that replaces this with a real identity provider.
 - `GET /demo/` — the demo course page with the embedded widget (`GET /demo`
   without the trailing slash also works — `StaticFiles` responds with a
   `307` redirect to `/demo/`).
@@ -177,22 +194,11 @@ make test       # pytest (needs a running postgres — see above)
 make check      # lint + typecheck + test
 ```
 
-**⚠️ Tests and the manual demo currently share the same local PostgreSQL
-instance** (no per-run isolation yet — see `docs/architecture.md`'s known
-limitations). Running `./scripts/demo_local.sh` or clicking around `/demo/`
-ingests documents into the same database `pytest` queries against; a
-leftover document with similar content can make an unrelated test's citation
-assertions fail. Before running the test suite from a known-clean state:
-
-```bash
-docker compose down -v
-docker compose up -d postgres
-```
-
-`down -v` **destroys all local Postgres/FastEmbed data in the Docker
-volumes** — only ever run this in your local dev/demo environment, never
-against a shared or persistent database. Proper corpus isolation (per
-document/tenant, or a dedicated test database) is deferred to a future PR.
+`pytest` runs against its own ephemeral database (created and dropped
+automatically per test session — see `docs/architecture.md`'s PR-004
+section), separate from whatever `./scripts/demo_local.sh`/`/demo/` puts
+into the regular demo database. No manual reset is needed between running
+the demo and running the tests.
 
 ## Project status
 

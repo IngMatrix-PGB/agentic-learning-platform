@@ -4,6 +4,7 @@ scoped for this PR — no queue.
 """
 
 import hashlib
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -11,9 +12,11 @@ from uuid import UUID, uuid4
 from agentic_learning_platform.application.ports.document_parser_port import IDocumentParserPort
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
-from agentic_learning_platform.domain.models import DocumentChunk, SourceDocument
+from agentic_learning_platform.domain.models import DocumentChunk, RequestContext, SourceDocument
 from agentic_learning_platform.exceptions import DocumentTooLargeError, UnsupportedDocumentError
 from agentic_learning_platform.infrastructure.chunking.page_chunking_strategy import chunk_by_page
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_MIME_TYPES = {"application/pdf"}
 
@@ -42,7 +45,9 @@ class IngestionService:
         self._max_upload_size_bytes = max_upload_size_mb * 1024 * 1024
         self._chunk_max_chars = chunk_max_chars
 
-    async def ingest(self, content: bytes, *, filename: str, mime_type: str) -> IngestionOutcome:
+    async def ingest(
+        self, content: bytes, *, filename: str, mime_type: str, context: RequestContext
+    ) -> IngestionOutcome:
         if mime_type not in _ALLOWED_MIME_TYPES:
             raise UnsupportedDocumentError(
                 f"Unsupported content type {mime_type!r}; only PDF is supported in this version."
@@ -54,8 +59,17 @@ class IngestionService:
             )
 
         checksum = hashlib.sha256(content).hexdigest()
-        existing = await self._vector_store_port.find_by_checksum(checksum)
+        existing = await self._vector_store_port.find_by_checksum(
+            checksum, organization_id=context.organization_id, course_id=context.course_id
+        )
         if existing is not None:
+            logger.info(
+                "document_ingest_skipped_already_exists organization_id=%s course_id=%s "
+                "document_id=%s",
+                context.organization_id,
+                context.course_id,
+                existing.id,
+            )
             return IngestionOutcome(
                 document_id=existing.id,
                 pages=existing.page_count,
@@ -73,6 +87,8 @@ class IngestionService:
         now = datetime.now(UTC)
         document = SourceDocument(
             id=document_id,
+            organization_id=context.organization_id,
+            course_id=context.course_id,
             source_name=filename,
             checksum_sha256=checksum,
             mime_type=mime_type,
@@ -86,6 +102,8 @@ class IngestionService:
                 DocumentChunk(
                     id=uuid4(),
                     document_id=document_id,
+                    organization_id=context.organization_id,
+                    course_id=context.course_id,
                     source_name=filename,
                     page_number=pending.page_number,
                     chunk_index=pending.chunk_index,
@@ -99,6 +117,13 @@ class IngestionService:
 
         await self._vector_store_port.insert_document(document, chunks_with_embeddings)
 
+        logger.info(
+            "document_ingested organization_id=%s course_id=%s document_id=%s chunks=%d",
+            context.organization_id,
+            context.course_id,
+            document_id,
+            len(chunks_with_embeddings),
+        )
         return IngestionOutcome(
             document_id=document_id,
             pages=extracted.page_count,

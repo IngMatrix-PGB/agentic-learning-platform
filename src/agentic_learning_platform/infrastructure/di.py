@@ -10,6 +10,9 @@ from dataclasses import dataclass
 import asyncpg
 
 from agentic_learning_platform.application.ports.answer_generator_port import IAnswerGeneratorPort
+from agentic_learning_platform.application.ports.authorization_context_port import (
+    IAuthorizationContextProvider,
+)
 from agentic_learning_platform.application.ports.document_parser_port import IDocumentParserPort
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
@@ -19,6 +22,9 @@ from agentic_learning_platform.infrastructure.answer_generation.bedrock_answer_a
 )
 from agentic_learning_platform.infrastructure.answer_generation.extractive_answer_adapter import (
     ExtractiveAnswerGeneratorAdapter,
+)
+from agentic_learning_platform.infrastructure.authorization.dev_header_provider import (
+    DevHeaderAuthorizationContextProvider,
 )
 from agentic_learning_platform.infrastructure.embeddings.bedrock_embedding_adapter import (
     BedrockEmbeddingAdapter,
@@ -62,3 +68,11 @@ def build_adapters(settings: Settings, pool: asyncpg.Pool) -> Adapters:
         vector_store=vector_store,
         answer_generator=ExtractiveAnswerGeneratorAdapter(),
     )
+
+
+def build_authorization_context_provider(settings: Settings) -> IAuthorizationContextProvider:
+    """Only one implementation exists today (dev headers) — ``settings`` is
+    accepted for the same reason ``build_adapters`` takes it: this is the
+    seam a future PR replaces with a real JWT/OIDC-backed provider, without
+    touching QueryService/IngestionService or any route."""
+    return DevHeaderAuthorizationContextProvider()
