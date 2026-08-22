@@ -234,11 +234,11 @@ LangGraph (the retrieve → evaluate → generate → cite flow is a small linea
 async function with one conditional branch — introducing LangGraph's
 state-graph/checkpointer machinery for this would be more ceremony than the
 flow itself, not less; it is introduced once a real multi-branch or
-tool-using flow needs it), the embeddable widget, streaming, authentication,
-multi-tenancy, S3, Terraform, ECS, Langfuse, DeepEval, Ragas, DOCX/PPTX/XLSX,
-diagrams, OCR, video, and Bedrock Knowledge Bases. Each is added in its own
-PR, reviewed on its own merits, once there is a concrete reason to introduce
-it.
+tool-using flow needs it — see PR-007), the embeddable widget, streaming,
+authentication, multi-tenancy, S3, Terraform, ECS, Langfuse, DeepEval, Ragas,
+DOCX/PPTX/XLSX, diagrams, OCR, video, and Bedrock Knowledge Bases. Each is
+added in its own PR, reviewed on its own merits, once there is a concrete
+reason to introduce it.
 
 ## PR-003 — Embeddable chat widget + streaming
 
@@ -881,3 +881,139 @@ LLM-as-judge abstraction (deferred until real generation exists to design it
 against), real Bedrock, S3, Terraform, AWS deployment, Cognito/JWT, any
 widget/UX change, and any retrieval tuning aimed at improving the numbers
 above.
+
+## PR-007 — LangGraph Orchestration
+
+Introduces LangGraph as the deterministic orchestration layer for the
+existing query workflow — the flow PR-002 deferred it for. This PR changes
+*orchestration*, not retrieval quality: `RetrievalService`,
+`IAnswerGeneratorPort`, embeddings, the evidence threshold, and the golden
+dataset/baseline are all untouched, and the eval harness reproduces the
+PR-005 baseline exactly (see Validation, below).
+
+### New surface
+
+```
+src/agentic_learning_platform/application/workflows/query_graph.py
+```
+
+`QueryService` (`application/services/query_service.py`) becomes a thin
+facade over the compiled graph: it builds the initial `QueryGraphState`,
+awaits the graph, and translates the final state back into the existing
+`QueryAnswer`. Its public method — `answer(question, context) ->
+QueryAnswer` — is unchanged, so `routes/query.py`, `routes/query_stream.py`,
+the widget, and the SSE contract (`token*`/`citations`/`done`) require zero
+changes.
+
+### Topology
+
+```
+API / SSE
+   ↓
+QueryService facade
+   ↓
+LangGraph
+   ↓
+retrieve
+   ↓
+evaluate_evidence
+   ├── insufficient → abstain → END
+   └── sufficient → generate → build_citations → END
+   ↓
+existing ports/adapters (RetrievalService, IAnswerGeneratorPort)
+```
+
+Every node is a thin delegate to the existing `RetrievalService` /
+`IAnswerGeneratorPort` — no retrieval, evidence-threshold, or generation
+logic is reimplemented in a node. `RetrievalService` remains the single
+source of truth for `has_sufficient_evidence` (see ADR-0002);
+`evaluate_evidence` only observes and logs that decision, and introduces no
+new evidence policy. The conditional edge is a plain, deterministic Python
+function reading that boolean — no LLM judge, no model-based routing.
+
+`QueryGraphState` is a plain (non-frozen) dataclass, consistent with the
+project's existing preference for framework-free dataclasses over
+`TypedDict`/Pydantic for internal state (`domain/models.py`). Citations are
+still derived exclusively from `retrieval_results`, never from generated
+text, and still expose only `source`/`page`/`chunk_id`/`score`.
+
+### Lifecycle and dependency injection
+
+The graph is built once, in `app.py`'s `_lifespan()` (and, identically, in
+`evals/runner.py` — the eval harness must construct the same graph the real
+application uses, not a separate orchestration path), alongside where
+`RetrievalService`/`QueryService` are already constructed — never per
+request. `infrastructure/di.py` is unchanged: it selects *adapters* by
+`runtime_mode`, and the graph doesn't vary by mode, so it doesn't belong
+there. A compiled graph without a checkpointer holds no per-request mutable
+state, so a single instance is safe to share across concurrent requests,
+exactly like the `RetrievalService`/`IAnswerGeneratorPort` instances it
+wraps.
+
+### No checkpointing
+
+The graph is compiled with no `checkpointer` argument — no persisted or
+conversational state. This PR handles one request at a time. See
+`docs/OPEN_SOURCE_DISCOVERY.md` for why `langgraph-checkpoint-postgres` is
+deferred rather than adopted now.
+
+### Logging
+
+The single `query_answered` log line is replaced by four graph-level
+events — `workflow_started`, `retrieval_completed`, `evidence_decision`,
+`workflow_completed` — carrying the same class of metadata as before
+(`organization_id`/`course_id`/`user_id`, counts, the evidence decision).
+Question text, chunk content, and generated answers are never logged.
+
+These four events are a **success-path lifecycle**, not a complete
+request-outcome log: `workflow_started` is emitted before graph execution
+begins; `retrieval_completed`, `evidence_decision`, and
+`workflow_completed` are each emitted only after the node they describe
+completes successfully. On a node failure (e.g. an infrastructure
+exception from `IEmbeddingPort`/`IVectorStorePort`/`IAnswerGeneratorPort`),
+the exception propagates to the existing FastAPI exception handlers (see
+Error propagation, below) and none of the later events are logged —
+`workflow_started` can therefore exist without a matching
+`workflow_completed`, with no dedicated failure event to distinguish that
+from a request still in flight. This is acceptable for what this PR
+orchestrates, but explicit `workflow_failed` telemetry is deferred as
+known observability debt, not solved here.
+
+### Error propagation
+
+No new exception hierarchy. A node's exception (e.g. an infrastructure
+failure from `IEmbeddingPort`/`IVectorStorePort`/`IAnswerGeneratorPort`)
+propagates out of `graph.ainvoke()` unwrapped — LangGraph does not catch or
+wrap arbitrary node exceptions — and reaches the existing FastAPI exception
+handlers exactly as it did before this PR existed.
+
+### Pyright strict mode
+
+LangGraph's public graph-building API (`StateGraph.add_node`,
+`add_conditional_edges`, `CompiledStateGraph.compile`/`ainvoke`) is not
+fully inferable under this project's strict pyright configuration, despite
+shipping a `py.typed` marker — the same class of upstream friction already
+documented for `asyncpg`. The relaxation is scoped narrowly to
+`application/workflows/` (see `pyproject.toml`); `application/services/`
+and `application/ports/` never import `langgraph` directly and remain fully
+strict — `query_service.py` only calls a fully-typed wrapper
+(`run_query_graph`) that isolates the one place LangGraph's partially-typed
+return value is handled.
+
+### Validation
+
+`make eval` reproduces the PR-005 baseline exactly — Recall@1/3/5, MRR,
+Citation Accuracy, No-Evidence Accuracy, False Positive/Negative Rate, and
+every per-case `rank`/`citation_correct` are bit-identical to
+`eval_results/baseline_vector_only.v1.json`; only `generated_at`,
+`git_commit`, and per-run wall-clock `retrieval_latency_ms` differ, as
+expected.
+
+### Explicitly out of scope for PR-007
+
+E5 or any embedding change, Hybrid Retrieval/BM25/FTS/RRF/reranking, any
+new evidence-gating approach (margin gate, cross-encoder verifier, LLM
+judge), query rewriting, multi-agent orchestration (supervisor/researcher/
+planner agents, ReAct, reflection loops), tool-calling, human-in-the-loop
+interrupts, MCP, checkpoint persistence/conversational memory, real Bedrock
+token streaming (remains PR-008), and any widget/UX or AWS/IaC change.
