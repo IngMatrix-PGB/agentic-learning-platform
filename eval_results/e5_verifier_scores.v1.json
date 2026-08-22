@@ -1,0 +1,1082 @@
+[
+  {
+    "id": "A1",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cuál es el objetivo de la gestión de incidentes?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": 10.314952850341797
+  },
+  {
+    "id": "A2",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué busca la gestión de problemas?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": 8.736637115478516
+  },
+  {
+    "id": "A3",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué controla la gestión de cambios?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": 8.66394329071045
+  },
+  {
+    "id": "A4",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué define un SLA?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": 5.8138580322265625
+  },
+  {
+    "id": "A5",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué hace la gestión de activos de TI?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": 9.14777660369873
+  },
+  {
+    "id": "A6",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué es la CMDB?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": 6.856760501861572
+  },
+  {
+    "id": "A7",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué debe hacer un empleado ante un incidente de seguridad?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": 3.8961691856384277
+  },
+  {
+    "id": "A8",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cómo se organiza el soporte técnico?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": 5.126407146453857
+  },
+  {
+    "id": "A9",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso restaura el servicio lo más rápido posible?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": 3.283580780029297
+  },
+  {
+    "id": "A10",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso identifica la causa raíz de incidentes recurrentes?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": 5.431577682495117
+  },
+  {
+    "id": "A11",
+    "category": "A-direct-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso minimiza el riesgo de interrupciones no planificadas?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": 5.611301422119141
+  },
+  {
+    "id": "A12",
+    "category": "A-direct-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué acuerdo incluye tiempos de respuesta y disponibilidad garantizada?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": 6.3726348876953125
+  },
+  {
+    "id": "A13",
+    "category": "A-direct-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión sigue el ciclo de vida del hardware y software?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": 6.557799339294434
+  },
+  {
+    "id": "A14",
+    "category": "A-direct-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué repositorio almacena elementos de configuración de TI?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": 8.499927520751953
+  },
+  {
+    "id": "A15",
+    "category": "A-direct-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué política exige reportar incidentes de seguridad de inmediato?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": 5.351145267486572
+  },
+  {
+    "id": "B1",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Para qué sirve restaurar rápidamente un servicio caído?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -0.4457651972770691
+  },
+  {
+    "id": "B2",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cómo se evita que una falla se repita en el futuro?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -4.682976722717285
+  },
+  {
+    "id": "B3",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cómo se controlan las modificaciones al entorno productivo?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": 3.684842586517334
+  },
+  {
+    "id": "B4",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué garantiza los tiempos de respuesta acordados con el cliente?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": 3.4807755947113037
+  },
+  {
+    "id": "B5",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cómo se controla el ciclo de vida completo de un equipo de TI?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": 3.14808988571167
+  },
+  {
+    "id": "B6",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Dónde se documentan las relaciones entre componentes de TI?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": 2.57216739654541
+  },
+  {
+    "id": "B7",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿A quién se avisa si se sospecha de un problema de seguridad?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": 1.2235536575317383
+  },
+  {
+    "id": "B8",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Cómo se escalan los casos que un nivel de soporte no resuelve?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": 4.105240821838379
+  },
+  {
+    "id": "B9",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué busca reducir el impacto de una interrupción de servicio?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": 0.6364766955375671
+  },
+  {
+    "id": "B10",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué previene que los mismos incidentes vuelvan a ocurrir?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": 3.444502592086792
+  },
+  {
+    "id": "B11",
+    "category": "B-paraphrase-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué asegura que un cambio no cause una caída no planeada?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -1.8275492191314697
+  },
+  {
+    "id": "B12",
+    "category": "B-paraphrase-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué compromiso regula la disponibilidad de un servicio?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -1.9026304483413696
+  },
+  {
+    "id": "B13",
+    "category": "B-paraphrase-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso rastrea activos desde su compra hasta su baja?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -0.4130573272705078
+  },
+  {
+    "id": "B14",
+    "category": "B-paraphrase-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué inventario central vincula los componentes tecnológicos?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -3.6335325241088867
+  },
+  {
+    "id": "B15",
+    "category": "B-paraphrase-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué protocolo exige reportar anomalías de seguridad al instante?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -0.06942106783390045
+  },
+  {
+    "id": "C1",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso responde ante una interrupción no planificada?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -3.5112459659576416
+  },
+  {
+    "id": "C2",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué disciplina investiga el origen de fallas repetitivas?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -2.2204034328460693
+  },
+  {
+    "id": "C3",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué control evalúa riesgo antes de modificar producción?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -0.595370352268219
+  },
+  {
+    "id": "C4",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué compromiso contractual define métricas de servicio?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -4.563178539276123
+  },
+  {
+    "id": "C5",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué registro documenta el ciclo de vida de equipos tecnológicos?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": 0.44524893164634705
+  },
+  {
+    "id": "C6",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué repositorio central es clave para la infraestructura de TI?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": 1.149667739868164
+  },
+  {
+    "id": "C7",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué mecanismo escala casos que requieren mayor especialización?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": 1.8825874328613281
+  },
+  {
+    "id": "C8",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso se activa apenas ocurre un corte de servicio?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -3.56191086769104
+  },
+  {
+    "id": "C9",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué análisis busca la raíz de fallas que se repiten?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": 0.2923937737941742
+  },
+  {
+    "id": "C10",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso de gestión de riesgo aplica a cambios de producción?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": 4.031496524810791
+  },
+  {
+    "id": "C11",
+    "category": "C-semantic-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué acuerdo regula el desempeño esperado de un proveedor?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -1.9713399410247803
+  },
+  {
+    "id": "C12",
+    "category": "C-semantic-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué protocolo exige notificar amenazas de seguridad?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -2.09413480758667
+  },
+  {
+    "id": "C13",
+    "category": "C-semantic-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué inventario sigue activos desde su adquisición?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -0.7105236053466797
+  },
+  {
+    "id": "C14",
+    "category": "C-semantic-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué estructura de atención escala incidentes complejos?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -5.663449287414551
+  },
+  {
+    "id": "C15",
+    "category": "C-semantic-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué esfuerzo recupera la operatividad tras un corte?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -5.743041038513184
+  },
+  {
+    "id": "D1",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión trata el síntoma inmediato en vez de la causa raíz?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -5.384323596954346
+  },
+  {
+    "id": "D2",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión previene fallas futuras en vez de solo resolver la actual?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -1.7175805568695068
+  },
+  {
+    "id": "D3",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso podría confundirse con incidentes pero es sobre modificaciones planeadas?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -3.5721983909606934
+  },
+  {
+    "id": "D4",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué documento podría confundirse con una política pero regula tiempos de respuesta?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -2.9686477184295654
+  },
+  {
+    "id": "D5",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión parece administrativa pero es clave para trazabilidad de cambios?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -10.228622436523438
+  },
+  {
+    "id": "D6",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso podría confundirse con un SLA pero es sobre escalación de casos?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -4.225998878479004
+  },
+  {
+    "id": "D7",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué política podría confundirse con gestión de incidentes pero es preventiva?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -3.9323761463165283
+  },
+  {
+    "id": "D8",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión de activos se enfoca en el ciclo físico, no en las relaciones de configuración?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -0.11300168186426163
+  },
+  {
+    "id": "D9",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso reactivo se distingue de uno preventivo en ITSM?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -8.385177612304688
+  },
+  {
+    "id": "D10",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión asegura continuidad de negocio, más allá de investigar la causa?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -4.811901569366455
+  },
+  {
+    "id": "D11",
+    "category": "D-ambiguous-supported",
+    "split": "calibration",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué gestión es preventiva, no reactiva, ante fallas de servicio?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -3.924135208129883
+  },
+  {
+    "id": "D12",
+    "category": "D-ambiguous-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué proceso de cambio se diferencia de uno de emergencia por ser planificado?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -2.4653561115264893
+  },
+  {
+    "id": "D13",
+    "category": "D-ambiguous-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué documento es contractual, no técnico, dentro de la gestión de servicios?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -4.971513748168945
+  },
+  {
+    "id": "D14",
+    "category": "D-ambiguous-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué base de datos es relacional, no solo un inventario simple?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -1.9542996883392334
+  },
+  {
+    "id": "D15",
+    "category": "D-ambiguous-supported",
+    "split": "validation",
+    "expected_label": "SUPPORTED",
+    "question": "¿Qué nivel de soporte es el primer punto de contacto, no el más especializado?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": 0.6876453757286072
+  },
+  {
+    "id": "E1",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué proceso busca eliminar la causa de fallas recurrentes?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -5.6509175300598145
+  },
+  {
+    "id": "E2",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué proceso restaura el servicio interrumpido lo más rápido posible?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -7.90758752822876
+  },
+  {
+    "id": "E3",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué controla el proceso de introducir modificaciones en producción?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -9.04672908782959
+  },
+  {
+    "id": "E4",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué define los niveles de servicio acordados con el cliente?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -4.761002063751221
+  },
+  {
+    "id": "E5",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cómo se organiza el soporte técnico en niveles?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -4.812287330627441
+  },
+  {
+    "id": "E6",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué hace seguimiento al ciclo de vida del hardware?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -9.557674407958984
+  },
+  {
+    "id": "E7",
+    "category": "E-related-but-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué repositorio almacena las relaciones entre elementos de TI?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -5.917606353759766
+  },
+  {
+    "id": "E8",
+    "category": "E-related-but-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿A quién se debe reportar un incidente de seguridad?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -6.097586154937744
+  },
+  {
+    "id": "E9",
+    "category": "E-related-but-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué proceso identifica causas raíz de fallas?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -7.570854187011719
+  },
+  {
+    "id": "E10",
+    "category": "E-related-but-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué acuerdo define disponibilidad garantizada?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -10.297934532165527
+  },
+  {
+    "id": "F1",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuántas horas tiene el SLA para resolver un incidente crítico?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -4.445828914642334
+  },
+  {
+    "id": "F2",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué porcentaje de disponibilidad garantiza el SLA?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": 0.03596849367022514
+  },
+  {
+    "id": "F3",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuántos niveles de aprobación tiene la gestión de cambios?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -0.8443543910980225
+  },
+  {
+    "id": "F4",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué campos exactos contiene un registro de la CMDB?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -1.6367181539535522
+  },
+  {
+    "id": "F5",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué porcentaje de incidentes resuelve el Tier 1?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -4.146923542022705
+  },
+  {
+    "id": "F6",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuál es el tiempo promedio de resolución de un incidente?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -4.334522247314453
+  },
+  {
+    "id": "F7",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cada cuánto se revisan los problemas recurrentes?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -2.6281208992004395
+  },
+  {
+    "id": "F8",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué proceso de aprobación se usa para dar de baja un activo?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -6.991397857666016
+  },
+  {
+    "id": "F9",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué información de contacto exige el reporte de un incidente de seguridad?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": 0.0031161755323410034
+  },
+  {
+    "id": "F10",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuántos incidentes simultáneos puede atender el equipo de soporte?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -6.054459571838379
+  },
+  {
+    "id": "F11",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué herramienta de software gestiona los tickets de incidentes?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -3.046566963195801
+  },
+  {
+    "id": "F12",
+    "category": "F-terminology-overlap-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué versión de ITIL sigue la gestión de cambios?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -0.7555912733078003
+  },
+  {
+    "id": "G1",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Quién aprueba las excepciones al SLA?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -4.948225498199463
+  },
+  {
+    "id": "G2",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué comité revisa los cambios rechazados?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -6.457863807678223
+  },
+  {
+    "id": "G3",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué software de terceros sincroniza la CMDB?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -2.423659324645996
+  },
+  {
+    "id": "G4",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuál fue la fecha de la última actualización de la política de seguridad?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -4.206804275512695
+  },
+  {
+    "id": "G5",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Quién es el responsable de gestionar los activos dados de baja?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -2.28944730758667
+  },
+  {
+    "id": "G6",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué proveedor de nube aloja la infraestructura de soporte?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -8.288216590881348
+  },
+  {
+    "id": "G7",
+    "category": "G-plausible-detail-unsupported",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué gerente autoriza los cambios de emergencia?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -6.038751602172852
+  },
+  {
+    "id": "G8",
+    "category": "G-plausible-detail-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué equipo audita los incidentes cerrados?",
+    "candidate_passage": "Gestion de Incidentes: El objetivo de la gestion de incidentes es restaurar el servicio interrumpido lo mas rapido posible, minimizando el impacto en el negocio.",
+    "logit": -4.821723937988281
+  },
+  {
+    "id": "G9",
+    "category": "G-plausible-detail-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué certificación se requiere para gestionar problemas?",
+    "candidate_passage": "Gestion de Problemas: La gestion de problemas busca identificar la causa raiz de los incidentes recurrentes para prevenir que vuelvan a ocurrir.",
+    "logit": -1.7147654294967651
+  },
+  {
+    "id": "G10",
+    "category": "G-plausible-detail-unsupported",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué presupuesto anual tiene la gestión de activos?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -1.6454826593399048
+  },
+  {
+    "id": "H1",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es un SLA?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -8.955619812011719
+  },
+  {
+    "id": "H2",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la CMDB?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -9.170297622680664
+  },
+  {
+    "id": "H3",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la gestión de cambios?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -10.10580825805664
+  },
+  {
+    "id": "H4",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la gestión de activos?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -9.439210891723633
+  },
+  {
+    "id": "H5",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué son los niveles de soporte técnico?",
+    "candidate_passage": "Gestion de Cambios: La gestion de cambios controla el proceso de introducir modificaciones en el entorno de produccion, minimizando el riesgo de interrupciones no planificadas.",
+    "logit": -9.68409252166748
+  },
+  {
+    "id": "H6",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la política de seguridad?",
+    "candidate_passage": "Gestion de Activos: La gestion de activos de TI hace seguimiento del ciclo de vida completo del hardware y software, desde su adquisicion hasta su retiro.",
+    "logit": -8.957216262817383
+  },
+  {
+    "id": "H7",
+    "category": "H-wrong-ITSM-concept",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la gestión de problemas?",
+    "candidate_passage": "Niveles de Soporte Tecnico: El soporte se organiza en niveles (Tier 1, Tier 2, Tier 3); cada nivel escala los casos que no puede resolver al siguiente nivel con mayor especializacion tecnica.",
+    "logit": -8.2814359664917
+  },
+  {
+    "id": "H8",
+    "category": "H-wrong-ITSM-concept",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la gestión de incidentes?",
+    "candidate_passage": "Base de Datos de Gestion de Configuracion (CMDB): Es el repositorio que almacena los elementos de configuracion de TI y las relaciones entre ellos.",
+    "logit": -8.163582801818848
+  },
+  {
+    "id": "H9",
+    "category": "H-wrong-ITSM-concept",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué mide un SLA?",
+    "candidate_passage": "Politica de Seguridad de la Informacion: Todo empleado debe reportar cualquier incidente de seguridad sospechoso de inmediato al equipo de respuesta a incidentes de seguridad.",
+    "logit": -9.38501262664795
+  },
+  {
+    "id": "H10",
+    "category": "H-wrong-ITSM-concept",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué contiene la CMDB?",
+    "candidate_passage": "Acuerdo de Nivel de Servicio (SLA): Un SLA define los niveles de servicio acordados entre el proveedor y el cliente, incluyendo tiempos de respuesta y disponibilidad garantizada.",
+    "logit": -10.09933853149414
+  },
+  {
+    "id": "I1",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué define un SLA?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -7.398993492126465
+  },
+  {
+    "id": "I2",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la CMDB?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -7.023832321166992
+  },
+  {
+    "id": "I3",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cómo se organiza el soporte técnico?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -7.665541172027588
+  },
+  {
+    "id": "I4",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué hace la gestión de activos?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -7.193412780761719
+  },
+  {
+    "id": "I5",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué política exige reportar incidentes de seguridad?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -5.938968658447266
+  },
+  {
+    "id": "I6",
+    "category": "I-cross-course-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué controla la gestión de cambios?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -6.556120872497559
+  },
+  {
+    "id": "I7",
+    "category": "I-cross-course-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué busca la gestión de problemas?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -3.895711898803711
+  },
+  {
+    "id": "I8",
+    "category": "I-cross-course-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuál es el objetivo de la gestión de incidentes?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": 6.7290825843811035
+  },
+  {
+    "id": "I9",
+    "category": "I-cross-course-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué acuerdo garantiza tiempos de respuesta?",
+    "candidate_passage": "Gestion de Incidentes (version curso 201): El proposito de administrar los incidentes es recuperar la operacion del servicio afectado en el menor tiempo posible y reducir el impacto sobre las operaciones del negocio.",
+    "logit": -9.958065032958984
+  },
+  {
+    "id": "J1",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué define un SLA?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -7.14603328704834
+  },
+  {
+    "id": "J2",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué es la CMDB?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -6.641808032989502
+  },
+  {
+    "id": "J3",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cómo se organiza el soporte técnico?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -6.683328628540039
+  },
+  {
+    "id": "J4",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué hace la gestión de activos?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -6.8735575675964355
+  },
+  {
+    "id": "J5",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué política exige reportar incidentes de seguridad?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -5.147918701171875
+  },
+  {
+    "id": "J6",
+    "category": "J-cross-organization-candidate",
+    "split": "calibration",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué controla la gestión de cambios?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -5.742157459259033
+  },
+  {
+    "id": "J7",
+    "category": "J-cross-organization-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué busca la gestión de problemas?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -3.8293654918670654
+  },
+  {
+    "id": "J8",
+    "category": "J-cross-organization-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Cuál es el objetivo de la gestión de incidentes?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": 7.756014347076416
+  },
+  {
+    "id": "J9",
+    "category": "J-cross-organization-candidate",
+    "split": "validation",
+    "expected_label": "UNSUPPORTED",
+    "question": "¿Qué acuerdo garantiza tiempos de respuesta?",
+    "candidate_passage": "Gestion de Incidentes (organizacion externa): El fin de gestionar incidentes es reestablecer el servicio afectado cuanto antes y limitar el impacto en la operacion.",
+    "logit": -9.614662170410156
+  }
+]
