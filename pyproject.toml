@@ -15,6 +15,7 @@ dependencies = [
     "fastembed>=0.4.2",
     "langchain-aws>=0.2.0",
     "python-multipart>=0.0.12",
+    "langgraph>=1.2.11,<2.0",
 ]
 
 [dependency-groups]
@@ -67,8 +68,10 @@ reportUnknownArgumentType = false
 # Connection.execute/fetch/fetchrow/transaction, asyncpg.connect, ...) has
 # untyped parameters in its own source — a project-wide relaxation would
 # weaken strictness for code that never touches it. Scoped to the two
-# directories that talk to raw asyncpg directly; domain/ and application/
-# only ever see our own typed ports and domain objects, and stay fully strict.
+# directories that talk to raw asyncpg directly; domain/ and
+# application/services/ + application/ports/ only ever see our own typed
+# ports and domain objects, and stay fully strict (application/workflows/
+# is the one narrow exception below, for the same class of reason).
 [[tool.pyright.executionEnvironments]]
 root = "src/agentic_learning_platform/infrastructure"
 reportMissingTypeStubs = false
@@ -81,6 +84,28 @@ root = "src/agentic_learning_platform/routes"
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownVariableType = false
+reportUnknownArgumentType = false
+
+# langgraph's public graph-building API (StateGraph.add_node/
+# add_conditional_edges, CompiledStateGraph.compile) is not fully inferable
+# under strict mode in the installed version, despite shipping a top-level
+# py.typed marker — the same class of upstream friction as asyncpg above,
+# scoped narrowly to the one module that imports langgraph directly.
+# application/services/ and application/ports/ never import langgraph and
+# stay fully strict. Only the three diagnostics demonstrably caused by
+# langgraph's own incomplete typing are relaxed here — reportMissingTypeStubs
+# fires on the `from langgraph.graph...` imports themselves, and
+# reportUnknownMemberType/reportUnknownArgumentType fire on add_node/
+# add_conditional_edges/compile's partially-unknown overloads.
+# reportUnknownVariableType was in this list until QueryGraphState's own
+# `field(default_factory=list)` (unparameterized) was the actual cause of
+# that one, independent of langgraph — fixed by parameterizing the factory
+# (`list[SearchResult]`/`list[Citation]`), after which pyright passes clean
+# without relaxing it.
+[[tool.pyright.executionEnvironments]]
+root = "src/agentic_learning_platform/application/workflows"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
 reportUnknownArgumentType = false
 
 [tool.pytest.ini_options]

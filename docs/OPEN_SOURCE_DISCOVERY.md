@@ -34,11 +34,11 @@ Investigación del ecosistema Open Source para decidir qué reutilizar y qué co
 
 | Nombre | Qué resuelve | Qué reutilizaríamos | Qué NO reutilizaríamos | Compatibilidad con nuestro MVP |
 |---|---|---|---|---|
-| langgraph | Orquestación de agentes como grafos de estado con checkpointer persistente. Incluye el paquete oficial `langgraph-checkpoint-postgres` dentro del mismo monorepo (`libs/checkpoint-postgres`) — no es un repo aparte. | El framework completo (ya es decisión arquitectónica) + el checkpointer Postgres oficial. | Nada — es dependencia directa, no código a copiar. | Total: es la pieza central de la arquitectura ya aprobada. |
+| langgraph | Orquestación de agentes como grafos de estado, con soporte opcional de checkpointer persistente. Incluye el paquete oficial `langgraph-checkpoint-postgres` dentro del mismo monorepo (`libs/checkpoint-postgres`) — no es un repo aparte, pero es una adopción separada, no automática. | El framework completo (ya es decisión arquitectónica — adoptado en PR-007 sin checkpointer). | El checkpointer Postgres, por ahora: PR-007 orquesta un único request sin estado persistido ni conversacional; `checkpoint-postgres` se adopta solo cuando exista un requisito real de persistencia conversacional, no por defecto. | Total para el framework en sí; el checkpointer queda diferido. |
 | langgraph-supervisor-py | Patrón oficial de "agente supervisor" para coordinar múltiples sub-agentes. | El patrón conceptual, para una eventual Fase 2 (ej. sub-agente de video/timestamps). | Adoptarlo ya en el MVP: nuestro grafo es de un solo agente lineal, un supervisor sería sobreingeniería prematura. | Baja ahora, alta en fases futuras. |
 | agent-chat-ui | App de referencia oficial para chatear con cualquier agente LangGraph vía streaming. | El contrato de eventos de streaming como referencia de diseño para nuestro propio esquema SSE. | El código completo de la app (es una app Next.js standalone, no un widget embebible). | Media — referencia, no dependencia. |
 
-**Recomendación**: **langgraph** (core + `checkpoint-postgres`) es la única adopción real de esta categoría — ya es la base de la arquitectura aprobada. Los otros dos quedan como patrones de referencia para fases posteriores.
+**Recomendación**: **langgraph** (core, sin checkpointer) es la única adopción real de esta categoría por ahora — ya es la base de la arquitectura aprobada (PR-007). `checkpoint-postgres` queda diferido hasta que exista un requisito real de estado conversacional persistente; no se adopta por defecto junto con el framework. Los otros dos quedan como patrones de referencia para fases posteriores.
 
 ---
 
@@ -237,7 +237,7 @@ Investigación del ecosistema Open Source para decidir qué reutilizar y qué co
 
 ## Recomendaciones
 
-- Adoptar como dependencias directas del MVP: `langgraph` (+ `checkpoint-postgres`), `langchain-aws`, `pgvector` + `pgvector-python`, `docling` (+ `pdfplumber` complementario), `fastapi` + `uvicorn`, `terraform-provider-aws` + `terraform-aws-rds`, `deepeval` + `ragas`, `langfuse`.
+- Adoptar como dependencias directas del MVP: `langgraph` (sin checkpointer — ver PR-007; `checkpoint-postgres` diferido hasta que exista un requisito real de persistencia conversacional), `langchain-aws`, `pgvector` + `pgvector-python`, `docling` (+ `pdfplumber` complementario), `fastapi` + `uvicorn`, `terraform-provider-aws` + `terraform-aws-rds`, `deepeval` + `ragas`, `langfuse`.
 - No adoptar ningún framework de widget de terceros ni de RAG de alto nivel — construir ambas piezas a medida sobre los puertos ya definidos en la arquitectura aprobada, usando los repos investigados solo como referencia de patrones/UX.
 - Revisar la licencia real (no solo el badge automático de GitHub) de cualquier nueva dependencia antes de agregarla — esta investigación encontró 3 casos de metadata ambigua que requirieron verificación manual del archivo `LICENSE`.
 - Reevaluar `pgvectorscale` y `terraform-aws-bedrock` cuando el proyecto pase de piloto a producción a escala, no antes.
@@ -259,8 +259,9 @@ Investigación del ecosistema Open Source para decidir qué reutilizar y qué co
                             │
 ┌───────────────────────────▼───────────────────────────────────────┐
 │  langchain-ai/langgraph                                            │
-│  grafo: validate→retrieve→evaluate→generate→cite→persist           │
-│  checkpointer: langgraph-checkpoint-postgres                       │
+│  grafo: retrieve→evaluate_evidence→generate/abstain→cite (PR-007)  │
+│  checkpointer: ninguno por ahora — diferido hasta que exista un    │
+│  requisito real de persistencia conversacional                     │
 └──────┬──────────────────────────────────────────┬──────────────────┘
        │                                          │
 ┌──────▼──────────────────┐          ┌────────────▼─────────────────┐

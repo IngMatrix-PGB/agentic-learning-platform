@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from agentic_learning_platform.application.services.ingestion_service import IngestionService
 from agentic_learning_platform.application.services.query_service import QueryService
 from agentic_learning_platform.application.services.retrieval_service import RetrievalService
+from agentic_learning_platform.application.workflows.query_graph import build_query_graph
 from agentic_learning_platform.config import Settings, get_settings
 from agentic_learning_platform.domain.models import Citation, RequestContext
 from agentic_learning_platform.evals.corpus import EVAL_HARNESS_USER_ID, ingest_eval_corpus
@@ -103,7 +104,11 @@ async def run() -> EvalRun:
             max_upload_size_mb=eval_settings.max_upload_size_mb,
             chunk_max_chars=eval_settings.chunk_max_chars,
         )
-        query_service = QueryService(retrieval_service, adapters.answer_generator)
+        # Same graph construction app.py uses (see infrastructure.di module
+        # docstring's reasoning for this file, extended to PR-007): no
+        # separate eval-only orchestration path.
+        query_graph = build_query_graph(retrieval_service, adapters.answer_generator)
+        query_service = QueryService(query_graph)
 
         await ingest_eval_corpus(ingestion_service)
 

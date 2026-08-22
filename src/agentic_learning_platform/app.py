@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from agentic_learning_platform.application.services.ingestion_service import IngestionService
 from agentic_learning_platform.application.services.query_service import QueryService
 from agentic_learning_platform.application.services.retrieval_service import RetrievalService
+from agentic_learning_platform.application.workflows.query_graph import build_query_graph
 from agentic_learning_platform.config import get_settings
 from agentic_learning_platform.exceptions import register_exception_handlers
 from agentic_learning_platform.infrastructure.db.migrations.runner import run_migrations
@@ -69,7 +70,11 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
         max_upload_size_mb=settings.max_upload_size_mb,
         chunk_max_chars=settings.chunk_max_chars,
     )
-    app.state.query_service = QueryService(retrieval_service, adapters.answer_generator)
+    # Built once, at startup — never per request (see docs/architecture.md's
+    # PR-007 section). The compiled graph holds no per-request mutable state
+    # (no checkpointer), so it is safe to share across concurrent requests.
+    query_graph = build_query_graph(retrieval_service, adapters.answer_generator)
+    app.state.query_service = QueryService(query_graph)
     app.state.authorization_context_provider = build_authorization_context_provider(settings)
 
     logger.info(
