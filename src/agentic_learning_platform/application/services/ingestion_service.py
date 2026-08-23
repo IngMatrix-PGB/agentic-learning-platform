@@ -1,6 +1,13 @@
-"""Orchestrates parse -> chunk -> embed -> persist, idempotent by the
-checksum of the uploaded bytes. Runs synchronously within the request, as
-scoped for this PR — no queue.
+"""Orchestrates parse -> chunk -> embed -> upload -> persist, idempotent by
+the checksum of the uploaded bytes. Runs synchronously within the request,
+as scoped for this PR — no queue.
+
+Order matters (see docs/architecture.md's PR-008 section): the source
+bytes are uploaded to document storage (S3 in AWS mode; a no-op in local
+mode) *before* the DB transaction that makes the document queryable. If the
+DB insert then fails, the already-uploaded object is deleted best-effort —
+an orphaned, unreferenced object is a strictly safer failure mode than a
+citation-worthy document with no source backing it.
 """
 
 import hashlib
@@ -10,6 +17,10 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from agentic_learning_platform.application.ports.document_parser_port import IDocumentParserPort
+from agentic_learning_platform.application.ports.document_storage_port import (
+    IDocumentStoragePort,
+    build_document_storage_key,
+)
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
 from agentic_learning_platform.domain.models import DocumentChunk, RequestContext, SourceDocument
@@ -35,6 +46,7 @@ class IngestionService:
         parser_port: IDocumentParserPort,
         embedding_port: IEmbeddingPort,
         vector_store_port: IVectorStorePort,
+        document_storage_port: IDocumentStoragePort,
         *,
         max_upload_size_mb: int,
         chunk_max_chars: int,
@@ -42,6 +54,7 @@ class IngestionService:
         self._parser_port = parser_port
         self._embedding_port = embedding_port
         self._vector_store_port = vector_store_port
+        self._document_storage_port = document_storage_port
         self._max_upload_size_bytes = max_upload_size_mb * 1024 * 1024
         self._chunk_max_chars = chunk_max_chars
 
@@ -83,6 +96,8 @@ class IngestionService:
             [chunk.content for chunk in pending_chunks]
         )
 
+        # Generated before any side effect (see module docstring): the same
+        # id identifies the document's storage key and its DB row.
         document_id = uuid4()
         now = datetime.now(UTC)
         document = SourceDocument(
@@ -115,7 +130,26 @@ class IngestionService:
             for pending, embedding in zip(pending_chunks, embeddings, strict=True)
         ]
 
-        await self._vector_store_port.insert_document(document, chunks_with_embeddings)
+        storage_key = build_document_storage_key(
+            organization_id=context.organization_id,
+            course_id=context.course_id,
+            document_id=document_id,
+        )
+        await self._document_storage_port.upload(content, key=storage_key, content_type=mime_type)
+        try:
+            await self._vector_store_port.insert_document(document, chunks_with_embeddings)
+        except Exception:
+            try:
+                await self._document_storage_port.delete(storage_key)
+            except Exception:
+                logger.exception(
+                    "document_storage_cleanup_failed organization_id=%s course_id=%s "
+                    "document_id=%s",
+                    context.organization_id,
+                    context.course_id,
+                    document_id,
+                )
+            raise
 
         logger.info(
             "document_ingested organization_id=%s course_id=%s document_id=%s chunks=%d",

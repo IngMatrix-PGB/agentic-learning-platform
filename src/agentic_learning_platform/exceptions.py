@@ -55,6 +55,22 @@ class MissingAuthorizationContextError(AppError):
     status_code = status.HTTP_401_UNAUTHORIZED
 
 
+class AnswerGenerationUnavailableError(AppError):
+    """The configured answer-generation backend is unavailable: access
+    denied, model unavailable, throttled past the SDK's bounded retries, or
+    timed out. One class for all of these (see this module's docstring) —
+    not a taxonomy of every possible Bedrock-side cause."""
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+
+
+class DocumentStorageError(AppError):
+    """Source-document storage (S3 in AWS mode) failed during ingestion —
+    upload or the best-effort compensating delete after a later failure."""
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+
+
 async def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 

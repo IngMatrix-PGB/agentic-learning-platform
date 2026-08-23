@@ -16,6 +16,7 @@ dependencies = [
     "langchain-aws>=0.2.0",
     "python-multipart>=0.0.12",
     "langgraph>=1.2.11,<2.0",
+    "boto3>=1.40.0",
 ]
 
 [dependency-groups]
@@ -113,3 +114,6 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
 asyncio_mode = "auto"
+markers = [
+    "aws_smoke: opt-in tests against real AWS Bedrock/S3 (requires real AWS credentials; each test skips itself when RUN_AWS_SMOKE_TESTS is unset — never required by normal CI, see tests/aws_smoke/).",
+]
