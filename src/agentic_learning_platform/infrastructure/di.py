@@ -1,7 +1,7 @@
 """Adapter selection by ``settings.runtime_mode`` — explicit and
 deterministic, never auto-detected from credentials.
 
-Plain factory functions, not a DI container library: with only four ports
+Plain factory functions, not a DI container library: with only five ports
 and two modes, a container would be pure ceremony (see docs/architecture.md).
 """
 
@@ -14,9 +14,10 @@ from agentic_learning_platform.application.ports.authorization_context_port impo
     IAuthorizationContextProvider,
 )
 from agentic_learning_platform.application.ports.document_parser_port import IDocumentParserPort
+from agentic_learning_platform.application.ports.document_storage_port import IDocumentStoragePort
 from agentic_learning_platform.application.ports.embedding_port import IEmbeddingPort
 from agentic_learning_platform.application.ports.vector_store_port import IVectorStorePort
-from agentic_learning_platform.config import Settings
+from agentic_learning_platform.config import Settings, validate_aws_configuration
 from agentic_learning_platform.infrastructure.answer_generation.bedrock_answer_adapter import (
     BedrockAnswerGeneratorAdapter,
 )
@@ -35,6 +36,12 @@ from agentic_learning_platform.infrastructure.embeddings.local_embedding_adapter
 from agentic_learning_platform.infrastructure.parsers.docling_parser_adapter import (
     DoclingParserAdapter,
 )
+from agentic_learning_platform.infrastructure.storage.null_document_storage_adapter import (
+    NullDocumentStorageAdapter,
+)
+from agentic_learning_platform.infrastructure.storage.s3_document_storage_adapter import (
+    S3DocumentStorageAdapter,
+)
 from agentic_learning_platform.infrastructure.vector_store.pgvector_vector_store_adapter import (
     PgVectorStoreAdapter,
 )
@@ -46,20 +53,25 @@ class Adapters:
     embedding: IEmbeddingPort
     vector_store: IVectorStorePort
     answer_generator: IAnswerGeneratorPort
+    document_storage: IDocumentStoragePort
 
 
 def build_adapters(settings: Settings, pool: asyncpg.Pool) -> Adapters:
-    """Build the one consistent pair of (embedding, answer_generator)
-    adapters for ``settings.runtime_mode`` — never a mixed combination."""
+    """Build the one consistent set of adapters for ``settings.runtime_mode``
+    — never a mixed combination. Validates AWS configuration (embedding
+    dimension, S3 bucket) at startup, before constructing any AWS client —
+    never per request."""
     parser = DoclingParserAdapter()
     vector_store = PgVectorStoreAdapter(pool)
 
     if settings.runtime_mode == "aws":
+        validate_aws_configuration(settings)
         return Adapters(
             parser=parser,
             embedding=BedrockEmbeddingAdapter(settings),
             vector_store=vector_store,
             answer_generator=BedrockAnswerGeneratorAdapter(settings),
+            document_storage=S3DocumentStorageAdapter(settings),
         )
 
     return Adapters(
@@ -67,6 +79,7 @@ def build_adapters(settings: Settings, pool: asyncpg.Pool) -> Adapters:
         embedding=LocalEmbeddingAdapter(settings),
         vector_store=vector_store,
         answer_generator=ExtractiveAnswerGeneratorAdapter(),
+        document_storage=NullDocumentStorageAdapter(),
     )
 
 

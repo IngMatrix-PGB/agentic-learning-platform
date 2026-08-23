@@ -101,6 +101,7 @@ async def run() -> EvalRun:
             adapters.parser,
             adapters.embedding,
             adapters.vector_store,
+            adapters.document_storage,
             max_upload_size_mb=eval_settings.max_upload_size_mb,
             chunk_max_chars=eval_settings.chunk_max_chars,
         )

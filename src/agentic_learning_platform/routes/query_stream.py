@@ -1,20 +1,31 @@
 """``POST /v1/query/stream`` — same question-answering contract as
-``/v1/query``, paced progressively over Server-Sent Events.
+``/v1/query``, delivered progressively over Server-Sent Events.
 
-The full ``QueryAnswer`` (retrieval, evidence check, generation, citations)
-is computed **before** the ``StreamingResponse`` is returned — never inside
-the async generator. This is deliberate: any error from retrieval,
-infrastructure, the answer generator, or input validation must be able to
-produce a normal HTTP error status *before* SSE headers are sent, since an
-HTTP status can no longer change once streaming has started.
+PR-008 changed how this endpoint delivers its answer, but not the
+orchestration that produces it: retrieval, the evidence decision,
+generation, and citation construction still happen in exactly the same
+LangGraph nodes ``/v1/query`` uses (see ``application.workflows.query_graph``
+and ``QueryService.answer_stream``) — this route only translates the
+graph's progressive output into SSE frames.
 
-Neither execution mode does real token-by-token model streaming in this PR
-(``ExtractiveAnswerGeneratorAdapter`` returns the full text at once;
-``BedrockAnswerGeneratorAdapter`` uses ``ainvoke``, not ``astream``). This
-endpoint paces the already-complete answer word-by-word purely to
-demonstrate the streaming protocol/UX — see docs/architecture.md for why,
-and for the future PR that would add real Bedrock streaming behind
-``IAnswerGeneratorPort``.
+Exception semantics changed as a deliberate, approved trade-off (see
+docs/architecture.md's PR-008 section): retrieval now runs *inside* the
+same streamed graph execution that has already opened this
+``StreamingResponse``, so a retrieval or generation failure can no longer
+produce a clean pre-SSE HTTP error status the way it could before real
+model streaming existed. Any such failure is instead reported as an
+``event: error`` SSE frame (the existing error guard below, now covering
+graph execution, not just the emission step) — the original exception is
+never swallowed, only translated into that established SSE error contract.
+Retrieval is deliberately NOT run outside the graph merely to preserve the
+old pre-stream HTTP status: that would mean two different orchestration
+implementations for ``/v1/query`` and ``/v1/query/stream``, which is
+exactly what PR-007/PR-008 exist to avoid.
+
+Local mode paces each token with ``stream_chunk_delay_ms`` for UX/protocol
+demo purposes (``ExtractiveAnswerGeneratorAdapter`` has no real incremental
+generation latency of its own). AWS mode adds no artificial delay — real
+Bedrock token latency is the pacing.
 """
 
 import asyncio
@@ -27,6 +38,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from agentic_learning_platform.application.services.query_service import QueryService
+from agentic_learning_platform.application.workflows.query_graph import QueryStreamToken
 from agentic_learning_platform.config import get_settings
 from agentic_learning_platform.domain.models import QueryAnswer, RequestContext
 from agentic_learning_platform.routes.authorization import get_request_context
@@ -45,30 +57,42 @@ def _sse_event(event: str, data: dict[str, object]) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
-async def _stream_answer(answer: QueryAnswer) -> AsyncIterator[str]:
-    delay_seconds = get_settings().stream_chunk_delay_ms / 1000
-    words = answer.answer.split(" ")
-    for index, word in enumerate(words):
-        text = word if index == len(words) - 1 else f"{word} "
-        yield _sse_event("token", {"text": text})
-        if delay_seconds > 0:
-            await asyncio.sleep(delay_seconds)
+async def _stream_answer(
+    query_service: QueryService, question: str, context: RequestContext
+) -> AsyncIterator[str]:
+    # Applied only in local mode: AWS/Bedrock chunks are real progressive
+    # generation and must not be artificially slowed down.
+    delay_seconds = (
+        get_settings().stream_chunk_delay_ms / 1000 if get_settings().runtime_mode == "local" else 0
+    )
 
-    citations = [citation_to_response(c).model_dump(mode="json") for c in answer.citations]
-    yield _sse_event("citations", {"citations": citations})
-    yield _sse_event("done", {})
+    async for item in query_service.answer_stream(question, context):
+        if isinstance(item, QueryStreamToken):
+            yield _sse_event("token", {"text": item.text})
+            if delay_seconds > 0:
+                await asyncio.sleep(delay_seconds)
+            continue
+
+        answer: QueryAnswer = item
+        citations = [citation_to_response(c).model_dump(mode="json") for c in answer.citations]
+        yield _sse_event("citations", {"citations": citations})
+        yield _sse_event("done", {})
 
 
-async def _stream_answer_with_error_guard(answer: QueryAnswer) -> AsyncIterator[str]:
-    # Defensive only: the RAG pipeline already ran to completion before this
-    # generator starts (see module docstring), so this guards against
-    # unexpected failures during the emission itself (e.g. the client
-    # disconnecting mid-pace), not against retrieval/generation errors.
-    # `asyncio.CancelledError` (e.g. from a client disconnect) is a
-    # `BaseException`, not caught here — it propagates normally instead of
-    # being reported as an "error" event on a connection that is already gone.
+async def _stream_answer_with_error_guard(
+    query_service: QueryService, question: str, context: RequestContext
+) -> AsyncIterator[str]:
+    # Covers the full graph execution now (retrieval, evidence decision,
+    # generation), not just the emission step — see this module's
+    # docstring. The original exception is logged, never swallowed; it
+    # cannot become an HTTP error status at this point (SSE headers were
+    # already sent), so it is translated into the established `error` SSE
+    # event instead. `asyncio.CancelledError` (e.g. a client disconnect) is
+    # a `BaseException`, not caught here — it propagates normally instead
+    # of being reported as an "error" event on a connection that is
+    # already gone.
     try:
-        async for chunk in _stream_answer(answer):
+        async for chunk in _stream_answer(query_service, question, context):
             yield chunk
     except Exception:
         logger.exception("Unexpected error while streaming a query answer")
@@ -81,8 +105,7 @@ async def query_stream(
     query_service: Annotated[QueryService, Depends(get_query_service)],
     context: Annotated[RequestContext, Depends(get_request_context)],
 ) -> StreamingResponse:
-    # Runs to completion here, outside the generator — see module docstring.
-    answer = await query_service.answer(body.question, context)
     return StreamingResponse(
-        _stream_answer_with_error_guard(answer), media_type="text/event-stream"
+        _stream_answer_with_error_guard(query_service, body.question, context),
+        media_type="text/event-stream",
     )

@@ -67,6 +67,7 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None]:
         adapters.parser,
         adapters.embedding,
         adapters.vector_store,
+        adapters.document_storage,
         max_upload_size_mb=settings.max_upload_size_mb,
         chunk_max_chars=settings.chunk_max_chars,
     )

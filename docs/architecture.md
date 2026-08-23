@@ -1017,3 +1017,248 @@ judge), query rewriting, multi-agent orchestration (supervisor/researcher/
 planner agents, ReAct, reflection loops), tool-calling, human-in-the-loop
 interrupts, MCP, checkpoint persistence/conversational memory, real Bedrock
 token streaming (remains PR-008), and any widget/UX or AWS/IaC change.
+
+## PR-008 — AWS Integration
+
+Validates the Bedrock adapters end-to-end, adds real Bedrock token
+streaming, and adds S3 source-document storage — without changing
+retrieval quality, the evidence threshold, the golden dataset/baseline,
+LangGraph's topology, or local mode's default behavior. ADR-0001 (vector-
+only) and ADR-0002 (E5 deferred) remain fully valid; nothing here touches
+retrieval or evidence policy.
+
+### One orchestration, two invocation modes (not two workflows)
+
+The architectural requirement driving this PR's design: `/v1/query` and
+`/v1/query/stream` must share exactly one implementation of
+`retrieve → evaluate_evidence → generate/abstain → citations` — real
+Bedrock streaming must not become a second, parallel orchestration path.
+
+This is achieved by invoking the *same compiled graph* two ways:
+
+- `/v1/query` → `QueryService.answer()` → `graph.ainvoke(state)` (buffered,
+  unchanged from PR-007).
+- `/v1/query/stream` → `QueryService.answer_stream()` →
+  `graph.astream(state, stream_mode=["custom", "values"])` (progressive).
+
+The only node that changed is `generate`. It now always consumes
+`IAnswerGeneratorPort.stream()` (never `.generate()` directly) and pushes
+each chunk through `langgraph.config.get_stream_writer()` while
+accumulating the full string for the final state:
+
+```python
+async def generate(state: QueryGraphState) -> dict[str, object]:
+    writer = get_stream_writer()
+    chunks: list[str] = []
+    async for chunk in answer_generator_port.stream(state.question, state.retrieval_results):
+        writer({"token": chunk})
+        chunks.append(chunk)
+    return {"answer": "".join(chunks)}
+```
+
+This one function serves both invocation modes without branching on mode:
+under `ainvoke()`, `get_stream_writer()` returns a verified no-op (nobody
+is listening for `"custom"` events) — verified directly against the
+installed LangGraph 1.2.11 before relying on it, not assumed from
+documentation. Under `astream(stream_mode=["custom", ...])`, each `writer`
+call is delivered progressively as its own `"custom"` stream item, and
+`stream_mode="values"` interleaved in the same call still yields the full
+state snapshot after every node (including `citations`, once
+`build_citations` runs) — one iterator gives a caller everything needed
+for `token`/`citations`/`done`. `abstain` pushes its fixed message through
+the same writer (never through the answer-generator port — the
+insufficient-evidence short-circuit is unchanged) so the insufficient-
+evidence path still produces a token event under streaming delivery.
+
+Topology, edges, `retrieve`, `evaluate_evidence`, and `build_citations` are
+byte-for-byte unchanged from PR-007. `run_query_graph` (buffered) and the
+new `stream_query_graph` (progressive) are two thin wrappers around the
+same `graph.ainvoke`/`graph.astream` calls — neither reimplements any
+orchestration decision.
+
+**Rejected alternative**: running retrieval outside the graph specifically
+to preserve `/v1/query/stream`'s old guarantee of a clean pre-SSE HTTP
+error status. This was deliberately not done — it would mean two
+different orchestration implementations for the two routes, which is
+exactly what this design avoids. See the next section for the trade-off
+this implies.
+
+### Exception semantics for `/v1/query/stream` changed (approved trade-off)
+
+Before PR-008, `/v1/query/stream` computed the entire answer (retrieval
+included) before returning `StreamingResponse`, so any failure produced a
+clean HTTP error status before SSE headers were ever sent. Once retrieval
+and generation run *inside* the same `astream()` call that has already
+been returned as the response body, that guarantee is no longer possible
+for this route: ASGI sends the `200`/SSE headers as soon as the response
+starts, before the first chunk is pulled from the body iterator — a
+failure at any point after that can only surface as an in-band SSE event,
+not a different HTTP status.
+
+`/v1/query` is unaffected: it still calls `ainvoke()` directly in the
+route handler, so any exception still propagates as a normal Python
+exception straight to the existing FastAPI handlers, before any response
+is sent.
+
+For `/v1/query/stream`, the existing error guard (previously scoped to
+"unexpected failure during emission only") now covers the full graph
+execution: a retrieval or Bedrock failure — including one that happens
+after some tokens were already delivered — is caught and reported as the
+established `event: error` SSE frame (`{"message": "stream_interrupted"}`)
+instead of a distinct HTTP status. The original exception is logged in
+full server-side and never silently swallowed; it is translated, not
+discarded. `asyncio.CancelledError` (a client disconnect) is a
+`BaseException` and is not caught by this guard — it propagates normally.
+
+### Real Bedrock streaming
+
+`BedrockAnswerGeneratorAdapter.stream()` uses
+`ChatBedrockConverse.astream()` (Bedrock's `InvokeModelWithResponseStream`
+API), yielding real model chunks as they arrive — not paced delivery of an
+already-complete answer. `ExtractiveAnswerGeneratorAdapter.stream()` (local
+mode) yields the extractive text word by word, reproducing the exact
+chunking `routes.query_stream` used to perform itself before PR-008, so
+local mode's observable SSE output is unchanged. `stream_chunk_delay_ms`
+pacing between token events is applied only in local mode, purely as
+transport/UX pacing in the route — never for AWS-mode chunks, where real
+Bedrock latency is the pacing, and never as business/orchestration policy.
+
+`IAnswerGeneratorPort` now declares a single abstract primitive,
+`stream()`; `generate()` is a concrete method on the ABC itself,
+accumulating `stream()`'s chunks — adapters implement one generation path,
+not two.
+
+### Bedrock usage/cost instrumentation
+
+`BedrockAnswerGeneratorAdapter` logs one `bedrock_generation_completed`
+event per call: `model_id`, `input_tokens`/`output_tokens`/`total_tokens`
+(from `ChatBedrockConverse`'s `usage_metadata`, present on the final
+streamed chunk), `time_to_first_token_ms`, `total_latency_ms`, and
+`estimated_cost_usd`. Usage metadata being unavailable (a model/version
+that doesn't populate it) never fails the request — the affected fields
+are simply omitted (`None`), never fabricated. Pricing lives in
+`infrastructure/answer_generation/bedrock_pricing.py`, isolated from
+adapter logic, as an explicitly versioned, model-keyed reference table
+that the module's own docstring documents as capable of going stale —
+`estimate_cost_usd` returns `None` for any model not listed, rather than
+guessing. This log line carries no request-scoped
+`organization_id`/`course_id`/`user_id` (the port's `stream`/`generate`
+signature never receives `RequestContext` — unchanged from before PR-008);
+correlating it to a specific request currently relies on timestamp
+proximity to the surrounding `workflow_*` log lines, not a shared
+correlation id (request-id infrastructure remains future work, as already
+noted for this project's logging in general).
+
+**Known limitation, accepted as low-risk observability debt**: when
+Bedrock generation fails, `BedrockAnswerGeneratorAdapter` raises
+`AnswerGenerationUnavailableError` with the underlying `botocore`
+exception's message included, and `routes.query_stream`'s error guard logs
+the full exception server-side via `logger.exception(...)`. Raw
+question/prompt/retrieved-context/generated-answer text is never
+deliberately logged anywhere in this codebase, but an AWS SDK exception
+message is inherently outside this codebase's control and could, in
+principle, echo back some request-adjacent detail depending on which
+Bedrock error it is. This is logged server-side only — the SSE client
+always receives the generic `{"message": "stream_interrupted"}` frame,
+never the underlying exception text. Structured/redacted AWS error field
+extraction, if ever needed, is future production-hardening work, not
+addressed here.
+
+### Embedding dimension: a dedicated AWS database, not a live switch
+
+Titan Embed Text V2's `embeddingDimension` request parameter only accepts
+256, 512, or 1024 — not local mode's 384 default. The migration runner
+already refuses to apply a migration with a different `embedding_dimension`
+than what is recorded for an already-migrated database (see PR-002's
+migration runner), so AWS mode requires its own database, migrated fresh
+with `EMBEDDING_DIMENSION` set to one of Titan's three valid values — never
+the same database local mode's 384-dimension schema already uses.
+
+`config.validate_aws_configuration` fails fast at startup (called from
+`infrastructure.di.build_adapters`, before any AWS client is constructed —
+never per request) if `runtime_mode="aws"` and `embedding_dimension` is not
+one of Titan's valid values, or if `S3_BUCKET` is unset — the previous
+behavior was to discover this on the first real Bedrock/S3 call instead.
+
+### S3 source-document storage
+
+`IDocumentStoragePort` (`upload`/`delete` only — no `read`/`list`, nothing
+in this codebase needs them yet) is a new port alongside the existing
+retrieval/generation/parsing ones. `S3DocumentStorageAdapter` (AWS mode)
+uses plain synchronous `boto3` wrapped in `asyncio.to_thread` — the same
+pattern `IDocumentParserPort` implementations already use for CPU-bound
+work — rather than adding `aioboto3` as a new dependency for a low-volume,
+non-hot-path operation. `NullDocumentStorageAdapter` (local mode)
+preserves today's behavior of never persisting the raw uploaded bytes
+anywhere.
+
+The storage key (`org/{organization_id}/courses/{course_id}/documents/
+{document_id}/source.pdf`, built by
+`document_storage_port.build_document_storage_key`) is fully derivable
+from identity `SourceDocument` already carries — it is never persisted as
+its own database column.
+
+`IngestionService.ingest()` generates `document_id` before any side
+effect (previously generated late, just before the DB insert) and uploads
+to storage *before* the DB transaction that makes the document queryable.
+If the DB insert then fails, the already-uploaded object is deleted
+best-effort; a failure during that cleanup is logged but never replaces
+the original DB exception (the caller still sees the real failure, not a
+cleanup-related one). An orphaned, unreferenced S3 object is a strictly
+safer failure mode than a citation-worthy document with no source backing
+it — there is deliberately no reconciliation job for orphaned objects in
+this PR. Objects are private (no ACL ever set, no presigned URLs); neither
+the bucket nor any key is exposed in any HTTP response.
+
+**Known limitation, deliberately not fixed in this PR**: the storage key
+embeds `organization_id`/`course_id` verbatim, and the current
+`DevHeaderAuthorizationContextProvider` (PR-004) only validates that these
+are non-empty — it does not constrain their character set. S3 object keys
+are opaque strings (S3 has no real filesystem and never resolves `..` as
+traversal), so this is not a path-traversal vulnerability, but an
+identifier containing `/` could make the key hierarchy ambiguous or
+confusing (e.g. colliding with a different course's key prefix). Defining
+and validating a canonical organization/course identifier format belongs
+to production authentication/identity integration (Cognito/OIDC/JWT,
+already noted elsewhere in this document as replacing the dev header
+provider) — tracked as future auth-hardening work, not addressed here.
+
+### AWS credentials
+
+The standard AWS SDK credential chain only — `AWS_PROFILE`/SSO for local
+development, an IAM task role for a future ECS deployment (not implemented
+here). No static credentials anywhere in this repo, including examples.
+
+### IAM actions PR-009 will need to encode
+
+```
+bedrock:InvokeModel                    -> foundation-model/{embedding_model_id}, foundation-model/{chat_model_id}
+bedrock:InvokeModelWithResponseStream  -> foundation-model/{chat_model_id}
+s3:PutObject / s3:GetObject /
+s3:DeleteObject / s3:HeadObject        -> arn:aws:s3:::{bucket}/org/*
+```
+
+Deliberately no `s3:ListBucket` (every key is computed deterministically,
+never listed) and no `s3:PutObjectAcl` (objects are never made public).
+
+### Explicitly out of scope for PR-008
+
+Terraform, ECS/Fargate, RDS provisioning, VPC/network infrastructure,
+Cognito/OIDC, production secrets provisioning, Bedrock Knowledge Bases, S3
+Vector Store (an existing personal Terraform module implements that
+architecture for a different project — deliberately not adopted here; see
+PR-009 for what, if anything, its IAM/naming/tagging patterns are worth
+reusing), E5, hybrid retrieval/BM25/RRF, reranking, any new evidence gate,
+LangGraph checkpointing, persistent conversation memory, multi-agent
+behavior, and any DOCX/PPTX/XLSX/multimodal/video/analytics feature.
+
+### Validation
+
+Real AWS validation (Bedrock embeddings, Bedrock generation, real
+streaming with more than one observed chunk, S3 upload/read-back/delete)
+is covered by `tests/aws_smoke/` — opt-in via `RUN_AWS_SMOKE_TESTS=1`,
+requiring real credentials, never required by normal CI (no changes to
+`.github/workflows/ci.yml` were needed: each smoke test skips itself when
+that variable is unset). `make eval` continues to reproduce the PR-005
+baseline exactly — this PR touches orchestration/streaming/storage, never
+retrieval.

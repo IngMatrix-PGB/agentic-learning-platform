@@ -19,9 +19,11 @@ concurrent requests, exactly like the ``RetrievalService`` and
 """
 
 import logging
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Literal, cast
 
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -106,14 +108,36 @@ def build_query_graph(
         return "generate" if state.has_sufficient_evidence else "abstain"
 
     async def generate(state: QueryGraphState) -> dict[str, object]:
-        answer_text = await answer_generator_port.generate(state.question, state.retrieval_results)
-        return {"answer": answer_text}
+        # Always consumes `.stream()`, never `.generate()` directly — this
+        # is what lets this one node implementation serve both invocation
+        # modes: under `ainvoke()` the writer is a verified no-op (nobody
+        # is listening for "custom" events), and under
+        # `astream(stream_mode=["custom", ...])` each chunk is delivered
+        # progressively as it arrives — see docs/architecture.md's PR-008
+        # section for the empirical verification this relies on.
+        writer = get_stream_writer()
+        chunks: list[str] = []
+        async for chunk in answer_generator_port.stream(state.question, state.retrieval_results):
+            writer({"token": chunk})
+            chunks.append(chunk)
+        return {"answer": "".join(chunks)}
 
     async def build_citations(state: QueryGraphState) -> dict[str, object]:
         citations = [_to_citation(result) for result in state.retrieval_results]
         return {"citations": citations}
 
     async def abstain(state: QueryGraphState) -> dict[str, object]:
+        # Pushes the fixed message word by word through the same writer
+        # `generate` uses (a no-op under `ainvoke`, progressive `custom`
+        # chunks under `astream`) — matching the word-by-word chunking
+        # ExtractiveAnswerGeneratorAdapter.stream() uses for real content,
+        # so local mode's observable SSE output for the insufficient-
+        # evidence path is unchanged from before PR-008. This is the fixed
+        # message itself, never the answer generator port.
+        writer = get_stream_writer()
+        words = NO_EVIDENCE_MESSAGE.split(" ")
+        for index, word in enumerate(words):
+            writer({"token": word if index == len(words) - 1 else f"{word} "})
         return {"answer": NO_EVIDENCE_MESSAGE, "citations": []}
 
     builder = StateGraph(QueryGraphState)
@@ -154,11 +178,60 @@ async def run_query_graph(graph: QueryGraph, initial_state: QueryGraphState) -> 
     ``str | None`` -> ``str`` narrowing actually happens.
     """
     result = await graph.ainvoke(initial_state)
+    return _state_from_values(result)
+
+
+def _state_from_values(values: dict[str, object]) -> QueryGraphState:
     return QueryGraphState(
-        question=cast(str, result["question"]),
-        request_context=cast(RequestContext, result["request_context"]),
-        retrieval_results=cast("list[SearchResult]", result["retrieval_results"]),
-        has_sufficient_evidence=cast(bool, result["has_sufficient_evidence"]),
-        answer=cast("str | None", result["answer"]),
-        citations=cast("list[Citation]", result["citations"]),
+        question=cast(str, values["question"]),
+        request_context=cast(RequestContext, values["request_context"]),
+        retrieval_results=cast("list[SearchResult]", values["retrieval_results"]),
+        has_sufficient_evidence=cast(bool, values["has_sufficient_evidence"]),
+        answer=cast("str | None", values["answer"]),
+        citations=cast("list[Citation]", values["citations"]),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class QueryStreamToken:
+    """One progressively-delivered chunk of the answer, as pushed by the
+    `generate` node's stream writer (see ``build_query_graph``)."""
+
+    text: str
+
+
+async def stream_query_graph(
+    graph: QueryGraph, initial_state: QueryGraphState
+) -> AsyncIterator[QueryStreamToken | QueryGraphState]:
+    """Invoke the compiled graph progressively — the same graph, same
+    nodes, same orchestration ``run_query_graph`` uses, just a different
+    invocation method (``astream`` instead of ``ainvoke``). Yields a
+    ``QueryStreamToken`` for every chunk pushed through the stream writer —
+    both ``generate`` (real/extractive answer chunks) and ``abstain``
+    (``NO_EVIDENCE_MESSAGE``, emitted progressively word by word, never
+    through the answer generator port) call the writer, so a caller sees
+    ``QueryStreamToken`` items on *either* path, not just the
+    sufficient-evidence one. Finally yields the last ``QueryGraphState``
+    snapshot once the graph reaches ``END`` — callers use that final state
+    for ``citations``/``has_sufficient_evidence`` regardless of which path
+    was taken (``citations`` is `[]` on the ``abstain`` path).
+
+    Values events (``stream_mode="values"``) still report the *last*
+    snapshot after every path — this is what makes the final
+    ``QueryGraphState`` yielded here correct no matter which branch ran.
+
+    A node exception (e.g. an AWS/Bedrock failure — see
+    ``AnswerGenerationUnavailableError``) propagates out of this generator
+    unwrapped, exactly like ``run_query_graph`` — see this module's
+    docstring and docs/architecture.md's PR-008 section for what changes
+    once ``routes.query_stream`` has already opened the SSE response by
+    the time that happens.
+    """
+    final_values: dict[str, object] | None = None
+    async for mode, chunk in graph.astream(initial_state, stream_mode=["custom", "values"]):
+        if mode == "custom":
+            yield QueryStreamToken(text=cast(str, cast(dict[str, object], chunk)["token"]))
+        else:
+            final_values = cast(dict[str, object], chunk)
+    assert final_values is not None, "graph produced no final state"
+    yield _state_from_values(final_values)

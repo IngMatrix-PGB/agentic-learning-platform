@@ -6,13 +6,17 @@ input validation happens before the stream opens.
 """
 
 import json
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from typing import cast
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from agentic_learning_platform.application.services.query_service import NO_EVIDENCE_MESSAGE
+from agentic_learning_platform.application.workflows.query_graph import QueryStreamToken
 from agentic_learning_platform.config import get_settings
+from agentic_learning_platform.domain.models import QueryAnswer, RequestContext
 
 
 # Pytest discovers and invokes autouse fixtures by name via its plugin
@@ -163,3 +167,50 @@ def test_existing_query_endpoint_still_works_unchanged(
 
     assert response.status_code == 200
     assert response.json()["citations"]
+
+
+class _FailingMidStreamQueryService:
+    """PR-008: a graph-execution failure now happens *inside* the same
+    streamed call that already opened the SSE response — this fake stands
+    in for a real ``QueryService`` whose graph fails mid-generation (e.g. a
+    Bedrock error), to prove the existing error guard still reports it as
+    an ``event: error`` frame with HTTP 200 already committed, rather than
+    a clean pre-stream error status (the approved PR-008 trade-off — see
+    docs/architecture.md and routes.query_stream's module docstring)."""
+
+    async def answer_stream(
+        self, question: str, context: RequestContext
+    ) -> AsyncIterator[QueryStreamToken | QueryAnswer]:
+        yield QueryStreamToken(text="partial ")
+        yield QueryStreamToken(text="answer ")
+        raise RuntimeError("simulated mid-stream graph failure")
+
+
+def test_stream_reports_a_mid_graph_failure_as_an_sse_error_event_after_200(
+    client: TestClient,
+) -> None:
+    app = cast(FastAPI, client.app)
+    original_query_service = app.state.query_service
+    app.state.query_service = _FailingMidStreamQueryService()
+    try:
+        with client.stream(
+            "POST", "/v1/query/stream", json={"question": "¿qué es esto?"}
+        ) as response:
+            # SSE headers/200 are already committed by the time the graph
+            # fails mid-stream — this is the approved trade-off, not an
+            # oversight.
+            assert response.status_code == 200
+            raw_text = "".join(response.iter_text())
+    finally:
+        app.state.query_service = original_query_service
+
+    events = _parse_sse_events(raw_text)
+    event_types = [event_type for event_type, _ in events]
+
+    assert "token" in event_types
+    assert event_types[-1] == "error"
+    error_data = events[-1][1]
+    assert error_data == {"message": "stream_interrupted"}
+    # No `citations`/`done` after a failure — the stream stopped when the
+    # exception was caught, not after a normal completion.
+    assert "done" not in event_types
