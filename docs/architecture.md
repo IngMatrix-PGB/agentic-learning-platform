@@ -882,6 +882,13 @@ against), real Bedrock, S3, Terraform, AWS deployment, Cognito/JWT, any
 widget/UX change, and any retrieval tuning aimed at improving the numbers
 above.
 
+> **PR-006 / retrieval experiments:** the hybrid-retrieval and E5 work that
+> followed this baseline isn't narrated as its own PR section here — see
+> [`docs/adr/0001-hybrid-retrieval-rejected.md`](adr/0001-hybrid-retrieval-rejected.md),
+> [`docs/adr/0002-e5-retrieval-adoption-deferred.md`](adr/0002-e5-retrieval-adoption-deferred.md),
+> and the raw data under [`eval_data/`](../eval_data/) and
+> [`eval_results/`](../eval_results/).
+
 ## PR-007 — LangGraph Orchestration
 
 Introduces LangGraph as the deterministic orchestration layer for the
@@ -1262,3 +1269,7 @@ requiring real credentials, never required by normal CI (no changes to
 that variable is unset). `make eval` continues to reproduce the PR-005
 baseline exactly — this PR touches orchestration/streaming/storage, never
 retrieval.
+
+> **PR-009 / AWS Infrastructure as Code:** the Terraform work that follows
+> this PR isn't narrated as its own PR section here — see
+> [`infra/README.md`](../infra/README.md).

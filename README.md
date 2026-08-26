@@ -1,5 +1,13 @@
 # Agentic Learning Platform
 
+**On the name:** despite "Agentic" in the title, the current implementation
+intentionally uses deterministic LangGraph orchestration — a fixed pipeline
+(`retrieve → evaluate_evidence → generate/abstain → build_citations`), not
+an autonomous agent, a tool-calling agent, or a multi-agent system.
+"Agentic" describes the architectural direction the platform is built
+toward, not its current runtime behavior — see "LangGraph Orchestration"
+below for exactly what is and isn't implemented today.
+
 An AI Learning Assistant backend for e-learning platforms: students ask a
 question about official course material and get an answer backed by a
 verifiable citation (source file, page) — or an explicit "insufficient
@@ -95,7 +103,7 @@ tuned to the dataset, only measured against it. Current baseline
 framework, not intuition, is what backed the two engineering decisions
 below.
 
-## Engineering Decisions: What We Tried and Rejected
+## Engineering Decisions: What We Tested and Learned
 
 Two retrieval-quality experiments were run against the baseline above and
 recorded as formal Architecture Decision Records. Both are still
