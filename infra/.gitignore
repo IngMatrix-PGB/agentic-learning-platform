@@ -1,0 +1,10 @@
+# Local Terraform state/cache/vars - never committed.
+# .terraform.lock.hcl IS committed deliberately (provider version pinning
+# reproducibility) - only the plugin cache directory itself is ignored.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+crash.*.log
