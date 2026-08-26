@@ -1,0 +1,53 @@
+# Copy to terraform.tfvars and fill in real values. NEVER commit
+# terraform.tfvars itself (see infra/.gitignore) - it is your local file,
+# not a template.
+#
+# No secret ever belongs in this file: the database password is entirely
+# managed by RDS + Secrets Manager (see modules/database) and is never a
+# Terraform variable.
+
+aws_region  = "us-east-1"
+project     = "agentic-learning-platform"
+environment = "dev"
+
+# --- REQUIRED: ingress compensating control ---
+# NOT authentication - see modules/networking/variables.tf. Fill in the
+# CIDR(s) that should be allowed to reach the pilot ALB (e.g. your current
+# public IP as a /32, or a VPN egress range you control). Terraform refuses
+# to plan/apply with this empty or set to ["0.0.0.0/0"] unless
+# allow_unrestricted_ingress=true is also set - do not set that to true for
+# this pilot.
+allowed_ingress_cidrs = []
+
+# --- REQUIRED: globally-unique S3 bucket name for source documents ---
+documents_bucket_name = "CHANGE-ME-globally-unique-bucket-name"
+
+# --- REQUIRED: image tag to deploy ---
+# No image exists at first apply - see infra/README.md's bootstrap
+# sequencing note. Set this once a real image has been pushed to the ECR
+# repository this Terraform creates. Must start with "sha-" (Terraform
+# rejects any tag that doesn't - see infra/README.md's ECR tag contract).
+image_tag = "sha-CHANGE-ME"
+
+# --- Everything below has a reasonable pilot default; override only if needed ---
+
+# vpc_cidr                          = "10.60.0.0/16"
+# db_engine_version                 = "16.4"
+# db_instance_class                 = "db.t4g.micro"
+# db_allocated_storage_gb           = 20
+# task_cpu                          = 1024
+# task_memory                       = 2048
+# bedrock_embedding_model_id        = "amazon.titan-embed-text-v2:0"
+# bedrock_chat_model_id             = "anthropic.claude-3-5-haiku-20241022-v1:0"
+
+# UNVERIFIED against the real target account/region as of PR-009's
+# implementation - see modules/iam/variables.tf. Set explicitly if
+# `aws bedrock get-foundation-model` / `list-inference-profiles` shows the
+# configured model requires an inference-profile ARN instead.
+# bedrock_embedding_resource_arns = []
+# bedrock_chat_resource_arns      = []
+
+# cors_allowed_origins ships defaulted to the app's own local-mode default
+# (http://localhost:8000) because the real ALB DNS name is only known after
+# first apply - update and re-apply once known.
+# cors_allowed_origins = "http://localhost:8000"
