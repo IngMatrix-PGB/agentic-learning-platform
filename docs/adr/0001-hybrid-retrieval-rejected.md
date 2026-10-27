@@ -90,6 +90,15 @@ vector-only and hybrid runs, at the same rank (2) in both — a different
 problem (ranking/ordering among already-retrieved candidates), not a
 recall problem. RRF did not change their order either, in this dataset.
 
+## Alternatives Considered
+
+- **Vector-only retrieval (PR-005 baseline)** — **KEPT.**
+- **Hybrid: vector + PostgreSQL FTS fused with RRF** — **REJECTED.** Identical
+  quality metrics on every measure, ~+43% p95 retrieval latency, and six new
+  production components (see Result).
+- **Reranking** — not evaluated here; the ranking-only cases (`C2`, `D1`, `D2`)
+  are a separate problem (see Reranking note).
+
 ## Decision
 
 **KEEP VECTOR_ONLY.**
