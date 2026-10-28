@@ -166,6 +166,19 @@ phrased indirectly, paraphrased, or fall in a semantically dense region of
 the corpus — exactly the style of question this project's own golden
 dataset (and each experiment's independent dataset) was built to contain.
 
+## Alternatives Considered
+
+- **Keep `paraphrase-multilingual-MiniLM-L12-v2` (384) with threshold `0.35`** —
+  **KEPT** for now.
+- **Adopt E5 now** — **REJECTED.** No evidence gate generalized (EXP-003B/C/D),
+  and it requires a 384 → 1024 migration, full reindexing and a ~2.1 GB model
+  dependency.
+- **Reject E5 outright** — **NOT CHOSEN.** E5's ranking gains were real and
+  measured (see Why Deferred Rather Than Rejected).
+- **Evidence gates for E5** — absolute cosine threshold (EXP-003B), relative
+  margin (EXP-003C) and cross-encoder verifier (EXP-003D); none met the criteria
+  fixed in advance (see Common Failure Pattern).
+
 ## Decision
 
 **DEFER E5 ADOPTION.**
